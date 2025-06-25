@@ -4,6 +4,7 @@
   },
   "imports": {
     "@inquirer/prompts": "npm:@inquirer/prompts@^7.5.3",
+    "@inquirer/select": "npm:@inquirer/select@^4.2.3",
     "@std/assert": "jsr:@std/assert@1"
   }
 }
