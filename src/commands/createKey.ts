@@ -12,7 +12,7 @@ const promptMessages: UserPromptMessage[] = [
   },
   {
     id: "name",
-    message: "Name of key ? (used as a comment in the SSH key)",
+    message: "Name of key ? (used as part of the name of the SSH key)",
   },
 ];
 
