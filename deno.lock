@@ -3,7 +3,8 @@
   "specifiers": {
     "jsr:@std/assert@1": "1.0.13",
     "jsr:@std/internal@^1.0.6": "1.0.8",
-    "npm:@inquirer/prompts@^7.5.3": "7.5.3"
+    "npm:@inquirer/prompts@^7.5.3": "7.5.3",
+    "npm:@inquirer/select@^4.2.3": "4.2.3"
   },
   "jsr": {
     "@std/assert@1.0.13": {
@@ -233,7 +234,8 @@
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1",
-      "npm:@inquirer/prompts@^7.5.3"
+      "npm:@inquirer/prompts@^7.5.3",
+      "npm:@inquirer/select@^4.2.3"
     ]
   }
 }
