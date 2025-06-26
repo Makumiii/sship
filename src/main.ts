@@ -1,3 +1,7 @@
-import { promptUser } from "./prompt.ts";
+import { writeResponses } from "./io.ts";
+import { select } from "./select.ts";
 
-await promptUser([{ id: "name", message: "what is your name " }]);
+const appTasks = ['create', 'delete', 'backup', 'list']
+
+const chosenTask = await select('What do you want to do?', appTasks )
+writeResponses({chosenTask}, 'task')
