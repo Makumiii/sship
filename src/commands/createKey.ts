@@ -15,13 +15,15 @@ const promptMessages: UserPromptMessage[] = [
     message: "Name of key ? (used as part of the name of the SSH key)",
   },
   {
-    id:'host',
-    message:'Name of the host ? This is the host you are trying to use the key with ie github.com'
+    id: "host",
+    message:
+      "Name of the host ? This is the host you are trying to use the key with ie github.com",
   },
   {
-    id:'user', 
-    message:'Username for the host ? This is the user profile on remote machine ie: for github user git'
-  }
+    id: "user",
+    message:
+      "Username for the host ? This is the user profile on remote machine ie: for github user git",
+  },
 ];
 
 await promptUser(promptMessages);

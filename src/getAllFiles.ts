@@ -1,9 +1,7 @@
-export function getAllFiles(location:string){
+export function getAllFiles(location: string) {
   const filesIterator = Deno.readDirSync(location);
   const files = Array.from(filesIterator).filter((file) => file.isFile).map((
-  file,
+    file,
   ) => file.name);
-  return files
-
-
+  return files;
 }
