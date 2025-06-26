@@ -22,6 +22,9 @@ elif [ "${USER_CHOSEN_TASK}" = "backup" ]; then
     "$COMMANDS_FILE_LOCATION/backup.sh"
 elif [ "${USER_CHOSEN_TASK}" = "list" ]; then
     "$COMMANDS_FILE_LOCATION/listKeys.sh"
+elif [ "${USER_CHOSEN_TASK}" = "uninstall" ]; then
+    "$COMMANDS_FILE_LOCATION/uninstall.sh"
+
 else
     echo "Error: Invalid task '${USER_CHOSEN_TASK}' in ${TEMP_FILE}."
     exit 1
