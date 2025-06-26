@@ -3,7 +3,7 @@ export type UserPromptMessage = {
   id: string;
 };
 
-export type tempWriteTasks = "create";
+export type tempWriteTasks = "create" | 'task'
 
 export type SshConfTemplate = {
   alias:string

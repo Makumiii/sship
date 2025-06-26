@@ -1,6 +1,6 @@
 import { input } from "@inquirer/prompts";
 import { UserPromptMessage } from "./types.ts";
-import { WriteResponses } from "./io.ts";
+import { writeResponses } from "./io.ts";
 
 export async function promptUser(message: UserPromptMessage[]) {
   const responses: Record<string, string> = {};
@@ -9,6 +9,6 @@ export async function promptUser(message: UserPromptMessage[]) {
     responses[msg.id] = answer;
   }
 
-  WriteResponses(responses, "create");
+  writeResponses(responses, "create");
   console.log("Responses collected and written to file.");
 }

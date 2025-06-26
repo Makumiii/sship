@@ -1,6 +1,6 @@
 import { tempWriteTasks } from "./types.ts";
 
-export function WriteResponses(
+export function writeResponses(
   responses: Record<string, string>,
   task: tempWriteTasks,
 ) {
