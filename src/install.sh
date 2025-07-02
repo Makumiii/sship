@@ -9,8 +9,7 @@ echo "Changing directory to sship..."
 cd "sship" || exit 1
 
 echo "Linking run.sh to \$HOME/.local/bin/sship..."
-ln "$(pwd)/src/run.sh" "$HOME/.local/bin/sship"
+ln -s "$(pwd)/src/run.sh" "$HOME/.local/bin/sship"
 echo "Making sship executable..."
 chmod +x "$HOME/.local/bin/sship"
 echo "Installation complete."
-cd "$HOME/sship" || exit 1
