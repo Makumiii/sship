@@ -9,9 +9,10 @@ try {
   writeResponses({ chosenTask }, "task");
 } catch (error) {
   if (error instanceof ExitPromptError) {
-    console.log("\nAborted. Exiting...");
+    console.log("\n[SSHIP] main.ts: Aborted. Exiting gracefully.");
     Deno.exit(130);
   } else {
-    console.error("An unexpected error occurred:", error);
+    console.error("[SSHIP] main.ts: An unexpected error occurred:", error);
   }
 }
+

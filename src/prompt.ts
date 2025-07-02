@@ -10,5 +10,4 @@ export async function promptUser(message: UserPromptMessage[]) {
   }
 
   writeResponses(responses, "create");
-  console.log("Responses collected and written to file.");
 }
