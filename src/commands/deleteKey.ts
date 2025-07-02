@@ -11,14 +11,10 @@ function deleteSelectedKey(selectedKey: string, files: string[]) {
   const filesToDelete = files.filter((file) => file.includes(selectedKey));
 
   filesToDelete.forEach((file) => {
-    console.log(`Deleting file: ${file}`);
     const filePath = `${fullLocation}/${file}`;
 
     Deno.removeSync(filePath);
-    console.log(`Deleted file: ${filePath}`);
   });
-
-  console.log(`You selected: ${selectedKey}`);
 }
 
 async function deleteKey() {
@@ -29,8 +25,6 @@ async function deleteKey() {
   }
 
   const selectedKey = await select("Select a key to delete", pairNames);
-
-  //   prompt the user for confirmation before deleting
 
   const deleteResponse = await select(
     `Are you sure you want to delete this key :${selectedKey} ?`,
