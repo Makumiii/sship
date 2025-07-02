@@ -13,3 +13,4 @@ ln "$(pwd)/src/run.sh" "$HOME/.local/bin/sship"
 echo "Making sship executable..."
 chmod +x "$HOME/.local/bin/sship"
 echo "Installation complete."
+cd "$HOME/sship" || exit 1
