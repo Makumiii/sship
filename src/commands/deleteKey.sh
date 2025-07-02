@@ -1,4 +1,5 @@
 #!/usr/bin/env bash 
+set -euo pipefail
 TS_FILE_LOCATION="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 TS_FILE="${TS_FILE_LOCATION}/deleteKey.ts"
