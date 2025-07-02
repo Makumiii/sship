@@ -20,7 +20,7 @@
 Install `sship` using `curl`:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Makumiii/sship/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Makumiii/sship/src/main/install.sh | bash
 ```
 
 
