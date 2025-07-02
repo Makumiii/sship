@@ -2,7 +2,8 @@
 
 echo "Creating SSH key..."
 TASK="create"
-CONTAINING_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONTAINING_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
 TS_FILE="${CONTAINING_DIR}/createKey.ts"
 TEMP_FILE="/tmp/sship/sship-${TASK}-responses.json"
 

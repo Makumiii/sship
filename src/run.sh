@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-CURRENT_FILE_LOCATION="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CURRENT_FILE_LOCATION="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
 COMMANDS_FILE_LOCATION="$CURRENT_FILE_LOCATION/commands"
 TASK="task"
 TEMP_FILE="/tmp/sship/sship-${TASK}-responses.json"
