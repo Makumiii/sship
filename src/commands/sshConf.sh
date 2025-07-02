@@ -1,4 +1,5 @@
 #!/usr/bin/env bash 
+set -euo pipefail
 PATH_TO_CONF="$HOME/.ssh"
 CONF_FILE="config"
 NAME="$1"

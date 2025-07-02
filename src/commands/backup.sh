@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 SSH_FOLDER_LOCATION="$HOME/.ssh"
 BACKUP_DIR="/tmp/sship-backup"

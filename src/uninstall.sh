@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 echo "Uninstalling SSHIP..." 
 echo "Removing $HOME/sship..."
 rm -rf "$HOME/sship"

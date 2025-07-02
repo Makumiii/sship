@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 echo "Changing directory to \$HOME..."
 cd "$HOME" || exit 1
 
