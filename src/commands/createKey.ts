@@ -1,5 +1,5 @@
 import { promptUser } from "../prompt.ts";
-import { UserPromptMessage } from "../types.ts";
+import type { UserPromptMessage } from "../types.ts";
 
 const promptMessages: UserPromptMessage[] = [
   {
@@ -24,6 +24,10 @@ const promptMessages: UserPromptMessage[] = [
     message:
       "Username for the host ? This is the user profile on remote machine ie: for github user git",
   },
+  {
+    id:'profile',
+    message:'The profile you want to use? (server, local , company, personal)',
+  }
 ];
 
 await promptUser(promptMessages);

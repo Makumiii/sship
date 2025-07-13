@@ -1,4 +1,4 @@
-const args = Deno.args;
+const args = process.argv.slice(2);
 const location = args[0];
 const fullLocation = `${location}/.ssh`;
 import { getAllFiles } from "../getAllFiles.ts";

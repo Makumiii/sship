@@ -1,5 +1,5 @@
 import { input } from "@inquirer/prompts";
-import { UserPromptMessage } from "./types.ts";
+import type { UserPromptMessage } from "./types.ts";
 import { writeResponses } from "./io.ts";
 
 export async function promptUser(message: UserPromptMessage[]) {
@@ -10,4 +10,6 @@ export async function promptUser(message: UserPromptMessage[]) {
   }
 
   writeResponses(responses, "create");
+  const responsesJson = JSON.stringify(responses, null, 2);
+  console.log(responsesJson)
 }

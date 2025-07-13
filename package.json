@@ -1,0 +1,16 @@
+{
+  "name": "sship",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@inquirer/core": "^10.1.14",
+    "@inquirer/prompts": "^7.6.0"
+  }
+}
