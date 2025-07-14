@@ -9,7 +9,5 @@ export async function promptUser(message: UserPromptMessage[]) {
     responses[msg.id] = answer;
   }
 
-  writeResponses(responses, "create");
-  const responsesJson = JSON.stringify(responses, null, 2);
-  console.log(responsesJson)
+  return responses;
 }

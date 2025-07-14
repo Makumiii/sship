@@ -1,43 +1,41 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TASK="create"
 CONTAINING_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
-TS_FILE="${CONTAINING_DIR}/createKey.ts"
-TEMP_FILE="/tmp/sship/sship-${TASK}-responses.json"
+# Get the JSON string from the first argument
+RESPONSES_JSON="$1"
 
-deno run -A "${TS_FILE}"
-
-EMAIL="$(jq -r '.email' < "${TEMP_FILE}")"
-PASSPHRASE="$(jq -r '.passphrase' < "${TEMP_FILE}")"
-NAME="$(jq -r '.name' < "${TEMP_FILE}")"
-HOST="$(jq -r '.host' < "${TEMP_FILE}")"
-MACHINE_USER="$(jq -r '.user' < "${TEMP_FILE}")"
+# Parse the JSON using jq
+EMAIL="$(echo "$RESPONSES_JSON" | jq -r '.email')"
+PASSPHRASE="$(echo "$RESPONSES_JSON" | jq -r '.passphrase')"
+NAME="$(echo "$RESPONSES_JSON" | jq -r '.name')"
+HOST="$(echo "$RESPONSES_JSON" | jq -r '.host')"
+MACHINE_USER="$(echo "$RESPONSES_JSON" | jq -r '.user')"
 
 # Check if required fields are present (POSIX compliant)
 if [ -z "${EMAIL}" ] || [ "${EMAIL}" = "null" ]; then
-    echo "[SSHIP] createKey.sh: Error: 'email' is missing in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] createKey.sh: Error: 'email' is missing. Exiting."
     exit 1
 fi
 
 if [ -z "${PASSPHRASE}" ] || [ "${PASSPHRASE}" = "null" ]; then
-    echo "[SSHIP] createKey.sh: Error: 'passphrase' is missing in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] createKey.sh: Error: 'passphrase' is missing. Exiting."
     exit 1
 fi
 
 if [ -z "${NAME}" ] || [ "${NAME}" = "null" ]; then
-    echo "[SSHIP] createKey.sh: Error: 'name' is missing in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] createKey.sh: Error: 'name' is missing. Exiting."
     exit 1
 fi
 
 if [ -z "${MACHINE_USER}" ] || [ "${MACHINE_USER}" = "null" ]; then
-    echo "[SSHIP] createKey.sh: Error: 'user' is missing in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] createKey.sh: Error: 'user' is missing. Exiting."
     exit 1
 fi
 
 if [ -z "${HOST}" ] || [ "${HOST}" = "null" ]; then
-    echo "[SSHIP] createKey.sh: Error: 'host' is missing in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] createKey.sh: Error: 'host' is missing. Exiting."
     exit 1
 fi
 

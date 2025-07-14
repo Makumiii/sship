@@ -5,6 +5,8 @@ export type UserPromptMessage = {
 
 export type tempWriteTasks = "create" | "task";
 
+export type Tasks = 'create' | 'backup' | 'delete' | 'list' | 'uninstall'
+
 export type SshConfTemplate = {
   alias: string;
   hostname: string;

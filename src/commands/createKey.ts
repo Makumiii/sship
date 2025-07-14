@@ -1,5 +1,6 @@
 import { promptUser } from "../prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
+import { spawn } from "bun";
 
 const promptMessages: UserPromptMessage[] = [
   {
@@ -30,4 +31,16 @@ const promptMessages: UserPromptMessage[] = [
   }
 ];
 
-await promptUser(promptMessages);
+export default async function createKeyCommand() {
+  const currentDir = import.meta.dir
+  console.log('the current dir is ', currentDir)
+  const responses = await promptUser(promptMessages);
+  const responsesJson = JSON.stringify(responses);
+
+  const command = spawn([`${currentDir}/createKey.sh`, responsesJson], {
+    stdout:'inherit',
+    stderr:'inherit',
+    stdin:'inherit',
+  });
+  await command.exited;
+}

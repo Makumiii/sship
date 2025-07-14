@@ -2,10 +2,10 @@ import { getAllFiles } from "../getAllFiles.ts";
 import { select } from "../select.ts";
 import { getKeys } from "../getKeys.ts";
 import { unlinkSync } from "node:fs";
+import {homedir} from 'node:os'
 
-const args = process.argv.slice(2);
 // get files in ssh dir
-const location = args[0];
+const location = homedir()
 const fullLocation = `${location}/.ssh`;
 
 function deleteSelectedKey(selectedKey: string, files: string[]) {
@@ -18,7 +18,7 @@ function deleteSelectedKey(selectedKey: string, files: string[]) {
   });
 }
 
-async function deleteKey() {
+export default async function deleteCommand() {
   const pairNames = getKeys(getAllFiles(fullLocation));
   if (pairNames.length === 0) {
     console.log("No keys found to delete");
@@ -27,9 +27,9 @@ async function deleteKey() {
 
   const choices = pairNames.filter((key) => key !== undefined)
 
-  const selectedKey = await select("Select a key to delete", choices);
+  const selectedKey = await select<string>("Select a key to delete", choices);
 
-  const deleteResponse = await select(
+  const deleteResponse = await select<'Yes' | 'No'>(
     `Are you sure you want to delete this key :${selectedKey} ?`,
     ["Yes", "No"],
   );
@@ -41,4 +41,4 @@ async function deleteKey() {
   deleteSelectedKey(selectedKey, getAllFiles(fullLocation));
 }
 
-await deleteKey();
+
