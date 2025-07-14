@@ -15,3 +15,10 @@ export type SshConfTemplate = {
   identityFile: string;
   identitiesOnly: "yes" | "no";
 };
+
+export type SshProfiles = {
+  [profileName:string]:{
+    ids:string[]
+
+  }
+}
