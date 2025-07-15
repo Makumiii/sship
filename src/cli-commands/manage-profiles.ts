@@ -53,7 +53,8 @@ export function registerManageProfilesCommand(program: Command) {
   profileCommand.command('list')
     .description('List all available profiles and their keys.')
     .action(async () => {
-      const { existingProfiles } = await getProfilesData();
+      const result = (await getProfilesData())!;
+      const { existingProfiles } = result;
       const profiles = existingProfiles!;
       if (Object.keys(existingProfiles).length === 0) {
         console.log("No profiles found.");
