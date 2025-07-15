@@ -9,7 +9,36 @@ import { connectCommand } from './commands/connect.ts';
 import { runCommand } from './utils/command.ts';
 import { resolve } from 'path';
 
-// ... (rest of the code)
+const program = new Command();
+
+program
+  .name('sship')
+  .description('CLI for SSH key management')
+  .version('1.0.0');
+
+program.command('create')
+  .description('Guides you through the process of generating new SSH key pairs.')
+  .action(async () => {
+    await createKeyCommand();
+  });
+
+program.command('delete')
+  .description('Lists all detected SSH key pairs and allows you to select one to delete.')
+  .action(async () => {
+    await deleteCommand();
+  });
+
+program.command('list')
+  .description('Scans your ~/.ssh/ directory for SSH key files and presents a clean list.')
+  .action(() => {
+    listKeysCommand();
+  });
+
+program.command('backup')
+  .description('Creates a secure backup of your SSH keys and configuration files.')
+  .action(async () => {
+    await backupCommand();
+  });
 
 program.command('uninstall')
   .description('Removes the SSHIP application directory and symbolic link.')
