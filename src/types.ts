@@ -5,6 +5,8 @@ export type UserPromptMessage = {
 
 export type tempWriteTasks = "create" | "task";
 
+export type Tasks = 'create' | 'backup' | 'delete' | 'list' | 'uninstall' | 'manageProfiles'
+
 export type SshConfTemplate = {
   alias: string;
   hostname: string;
@@ -13,3 +15,16 @@ export type SshConfTemplate = {
   identityFile: string;
   identitiesOnly: "yes" | "no";
 };
+
+
+export type SshipUserProfile = {
+    [profileName:string]:{
+    ids:string[]
+
+  }
+
+}
+
+export type SshipUserConfig = {
+  profiles:SshipUserProfile
+}

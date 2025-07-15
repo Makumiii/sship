@@ -1,10 +1,11 @@
-import { tempWriteTasks } from "./types.ts";
+import type { tempWriteTasks } from "./types.ts";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 export function writeResponses(
   responses: Record<string, string>,
   task: tempWriteTasks,
 ) {
   const path = `/tmp/sship/sship-${task}-responses.json`;
-  Deno.mkdirSync("/tmp/sship", { recursive: true });
-  Deno.writeTextFileSync(path, JSON.stringify(responses, null, 2));
+  mkdirSync("/tmp/sship", { recursive: true });
+  writeFileSync(path, JSON.stringify(responses, null, 2));
 }

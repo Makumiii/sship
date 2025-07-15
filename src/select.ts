@@ -1,8 +1,9 @@
 import { select as selectFromInquirer } from "@inquirer/prompts";
-export async function select(message: string, choices: string[]) {
+import type { Tasks } from "./types";
+export async function select<T>(message: string, choices: string[]) {
   const answer = await selectFromInquirer({
     message: message,
     choices: choices,
   });
-  return answer as unknown as string;
+  return answer as unknown as T
 }

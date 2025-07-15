@@ -1,10 +1,11 @@
 import { getAllFiles } from "../getAllFiles.ts";
 import { select } from "../select.ts";
 import { getKeys } from "../getKeys.ts";
+import { unlinkSync } from "node:fs";
+import {homedir} from 'node:os'
 
-const args = Deno.args;
 // get files in ssh dir
-const location = args[0];
+const location = homedir()
 const fullLocation = `${location}/.ssh`;
 
 function deleteSelectedKey(selectedKey: string, files: string[]) {
@@ -13,20 +14,22 @@ function deleteSelectedKey(selectedKey: string, files: string[]) {
   filesToDelete.forEach((file) => {
     const filePath = `${fullLocation}/${file}`;
 
-    Deno.removeSync(filePath);
+    unlinkSync(filePath);
   });
 }
 
-async function deleteKey() {
+export default async function deleteCommand() {
   const pairNames = getKeys(getAllFiles(fullLocation));
   if (pairNames.length === 0) {
     console.log("No keys found to delete");
     return;
   }
 
-  const selectedKey = await select("Select a key to delete", pairNames);
+  const choices = pairNames.filter((key) => key !== undefined)
 
-  const deleteResponse = await select(
+  const selectedKey = await select<string>("Select a key to delete", choices);
+
+  const deleteResponse = await select<'Yes' | 'No'>(
     `Are you sure you want to delete this key :${selectedKey} ?`,
     ["Yes", "No"],
   );
@@ -38,4 +41,4 @@ async function deleteKey() {
   deleteSelectedKey(selectedKey, getAllFiles(fullLocation));
 }
 
-await deleteKey();
+

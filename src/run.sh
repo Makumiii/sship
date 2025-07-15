@@ -4,15 +4,12 @@ set -euo pipefail
 CURRENT_FILE_LOCATION="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 
 COMMANDS_FILE_LOCATION="$CURRENT_FILE_LOCATION/commands"
-TASK="task"
-TEMP_FILE="/tmp/sship/sship-${TASK}-responses.json"
 
-deno run -A "${CURRENT_FILE_LOCATION}/main.ts"
 
-USER_CHOSEN_TASK="$(jq -r '.chosenTask' < "${TEMP_FILE}")"
+USER_CHOSEN_TASK="$1"
 
 if [ -z "${USER_CHOSEN_TASK}" ] || [ "${USER_CHOSEN_TASK}" = "null" ]; then
-    echo "[SSHIP] Error: 'task' is missing in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] Error: 'task' is missing. Exiting."
     exit 1
 fi
 
@@ -29,6 +26,6 @@ elif [ "${USER_CHOSEN_TASK}" = "uninstall" ]; then
     "$CURRENT_FILE_LOCATION/uninstall.sh"
 
 else
-    echo "[SSHIP] Error: Invalid task '${USER_CHOSEN_TASK}' in ${TEMP_FILE}. Exiting."
+    echo "[SSHIP] Error: Invalid task '${USER_CHOSEN_TASK}'. Exiting."
     exit 1
 fi
