@@ -65,10 +65,11 @@ export async function addProfile(profileName:string, keys:string[]){
     const {existingProfiles:data, existingData} = await getProfilesData()
 
     if(profileExists(profileName, data)){
-        if (!data[profileName].ids) {
-            data[profileName].ids = [];
+        const profile = data[profileName]!;
+        if (!profile.ids) {
+            profile.ids = [];
         }
-        data[profileName].ids.push(...keys);
+        profile.ids.push(...keys);
         await writeProfilesData(data, existingData);
         console.log('Profile updated successfully');
         return;
