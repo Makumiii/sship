@@ -21,7 +21,7 @@ elif [ "${USER_CHOSEN_TASK}" = "delete" ]; then
 elif [ "${USER_CHOSEN_TASK}" = "backup" ]; then
     "$COMMANDS_FILE_LOCATION/backup.sh" "$@"
 elif [ "${USER_CHOSEN_TASK}" = "list" ]; then
-    "$COMMANDS_FILE_LOCATION/listKeys.sh"
+    deno run --allow-read="$HOME/.ssh" "$CURRENT_FILE_LOCATION/../src/commands/listKeys.ts"
 elif [ "${USER_CHOSEN_TASK}" = "uninstall" ]; then
     "$CURRENT_FILE_LOCATION/uninstall.sh"
 

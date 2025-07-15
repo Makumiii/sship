@@ -65,9 +65,13 @@ export async function addProfile(profileName:string, keys:string[]){
     const {existingProfiles:data, existingData} = await getProfilesData()
 
     if(profileExists(profileName, data)){
-        data[profileName]?.ids.push(...keys);
+        if (!data[profileName].ids) {
+            data[profileName].ids = [];
+        }
+        data[profileName].ids.push(...keys);
         await writeProfilesData(data, existingData);
         console.log('Profile updated successfully');
+        return;
     }
     
     const newProfile:SshipUserProfile = {
