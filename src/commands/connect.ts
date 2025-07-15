@@ -13,7 +13,6 @@ export async function connectCommand(){
         const config = await readFile(pathToSshConfig,'utf-8')
         const matches = config.match(regexToUse);
         const availableAliases = matches?.map((match)=> match.split(' ')[1])
-        console.log("Available SSH aliases:", availableAliases);
 
         if(!availableAliases || availableAliases.length === 0) {
             console.error("No SSH aliases found in the config file.");
@@ -28,4 +27,3 @@ export async function connectCommand(){
         console.error("An error occurred while connecting:", e);
     }
 }
-await connectCommand();

@@ -3,10 +3,37 @@ import { select } from "../select.ts";
 import { getKeys } from "../getKeys.ts";
 import { unlinkSync } from "node:fs";
 import {homedir} from 'node:os'
+import {readFile, writeFile} from 'fs/promises'
 
 // get files in ssh dir
 const location = homedir()
 const fullLocation = `${location}/.ssh`;
+
+const sshConfigLocation = `${fullLocation}/config`;
+
+const blockRegex = (alias:string) => new RegExp(`^Host\\s+${alias}\\b(?:\\r?\\n(?!Host\\b)[ \\t]+\\S.*)*`,'m')
+
+
+async function deleteKeyAlias(alias:string){
+  try{
+    const config = await readFile(sshConfigLocation, 'utf-8');
+    const regex = blockRegex(alias)
+    const match = config.match(regex);
+    if (!match) {
+      console.error(`No matching alias found for: ${alias}`);
+      return;
+    }
+    const newConfig = config.replace(regex, '')
+    await writeFile(sshConfigLocation, newConfig, 'utf-8');
+
+
+
+
+  }catch(e){
+    console.error("An error occurred while deleting the key alias:", e);
+  }
+
+}
 
 function deleteSelectedKey(selectedKey: string, files: string[]) {
   const filesToDelete = files.filter((file) => file.includes(selectedKey));
@@ -39,6 +66,9 @@ export default async function deleteCommand() {
   }
 
   deleteSelectedKey(selectedKey, getAllFiles(fullLocation));
+  await deleteKeyAlias(selectedKey);
 }
+
+await deleteKeyAlias('test')
 
 
