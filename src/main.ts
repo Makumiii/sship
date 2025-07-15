@@ -1,13 +1,13 @@
-import { select } from "./select.ts";
+import { select } from "./utils/select.ts";
 import { ExitPromptError } from "@inquirer/core";
-import deleteCommand, * as deleteKey   from "./commands/deleteKey.ts"; 
+import deleteCommand from "./commands/deleteKey.ts"; 
 import type { Tasks } from "./types.ts";
 import createKeyCommand from "./commands/createKey.ts";
 import listKeysCommand from "./commands/listKeys.ts";
-import { runCommand } from "./command.ts";
+import { runCommand } from "./utils/command.ts";
 import backupCommand from "./commands/backup.ts";
-import { runNested } from "./nestedNav.ts";
-import profileSequence from "./manageProfiles.ts";
+import { runNested } from "./utils/nestedNav.ts";
+import profileSequence from "./utils/manageProfiles.ts";
 import { connectCommand } from "./commands/connect.ts";
 
 
@@ -35,7 +35,7 @@ try {
       break;
     }
     case 'uninstall': {
-      await runCommand('./uninstall.sh')
+      await runCommand('../scripts/uninstall.sh')
       break;
     }
     case 'manageProfiles' : {

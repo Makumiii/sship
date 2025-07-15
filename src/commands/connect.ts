@@ -1,8 +1,8 @@
 import {readFile} from 'fs/promises'
 import { homedir } from 'os';
 import { availableMemory } from 'process';
-import { select } from '../select';
-import { runCommand } from '../command';
+import { select } from '../utils/select';
+import { runCommand } from '../utils/command';
 const pathToSshConfig = `${homedir()}/.ssh/config`;
 
 const regexToUse = /^Host[ \t]+\S+/gm

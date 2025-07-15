@@ -1,4 +1,4 @@
-import type { tempWriteTasks } from "./types.ts";
+import type { tempWriteTasks } from "../types.ts";
 import { mkdirSync, writeFileSync } from "node:fs";
 
 export function writeResponses(

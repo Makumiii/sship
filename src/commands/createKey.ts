@@ -1,6 +1,7 @@
-import { promptUser } from "../prompt.ts";
+import { promptUser } from "../utils/prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
 import { spawn } from "bun";
+import {resolve} from "path";
 
 const promptMessages: UserPromptMessage[] = [
   {
@@ -36,8 +37,9 @@ export default async function createKeyCommand() {
   console.log('the current dir is ', currentDir)
   const responses = await promptUser(promptMessages);
   const responsesJson = JSON.stringify(responses);
+  const pathToScript = resolve(import.meta.dir, '../../scripts/commands/createKey.sh');
 
-  const command = spawn([`${currentDir}/createKey.sh`, responsesJson], {
+  const command = spawn([pathToScript, responsesJson], {
     stdout:'inherit',
     stderr:'inherit',
     stdin:'inherit',

@@ -1,6 +1,6 @@
 import {homedir} from 'node:os'
-import { getAllFiles } from "../getAllFiles.ts";
-import { getKeys } from "../getKeys.ts";
+import { getAllFiles } from "../utils/getAllFiles.ts";
+import { getKeys } from "../utils/getKeys.ts";
 const location = homedir();
 
 const fullLocation = `${location}/.ssh`;

@@ -1,8 +1,8 @@
-import { getRawKeys } from "./commands/listKeys";
-import { addProfile, removeProfile, renameProfile, getProfileNames } from "./commands/profile";
-import type { NestedRunSequence } from "./nestedNav";
-import { promptUser } from "./prompt";
-import { select } from "./select";
+import { getRawKeys } from "../commands/listKeys";
+import { addProfile, removeProfile, renameProfile, getProfileNames } from "../commands/profile";
+import type { NestedRunSequence } from "./nestedNav.ts";
+import { promptUser } from "./prompt.ts";
+import { select } from "./select.ts";
 
 const manageProfileTasks = ['create', 'remove', 'rename', 'store'];
 const profileSequence: NestedRunSequence = {
