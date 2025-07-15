@@ -4,7 +4,9 @@ import type { NestedRunSequence } from "./nestedNav.ts";
 import { promptUser } from "./prompt.ts";
 import { select } from "./select.ts";
 
-const manageProfileTasks = ['create', 'remove', 'rename', 'store'];
+import { getProfilesData } from "../commands/profile";
+
+const manageProfileTasks = ['create', 'remove', 'rename', 'store', 'list'];
 const profileSequence: NestedRunSequence = {
     actionsTracker:[],
     list:{
@@ -14,6 +16,7 @@ const profileSequence: NestedRunSequence = {
             if(selected === 'remove') return 'removeProfile';
             if(selected === 'rename') return 'renameProfile';
             if(selected === 'store') return 'storeProfile';
+            if(selected === 'list') return 'listProfiles';
             return null;
         },
         'createProfile': async () => {
@@ -65,6 +68,23 @@ const profileSequence: NestedRunSequence = {
         },
         'storeProfile': async () => {
             console.log("'store' functionality is not yet implemented.");
+            return 'mainTask';
+        },
+        'listProfiles': async () => {
+            const { existingProfiles } = await getProfilesData();
+            if (Object.keys(existingProfiles).length === 0) {
+                console.log("No profiles found.");
+                return 'mainTask';
+            }
+            console.log("Available Profiles:");
+            for (const profileName in existingProfiles) {
+                console.log(`  - ${profileName}:`);
+                if (existingProfiles[profileName].ids && existingProfiles[profileName].ids.length > 0) {
+                    existingProfiles[profileName].ids.forEach(key => console.log(`    - ${key}`));
+                } else {
+                    console.log("    (No keys associated)");
+                }
+            }
             return 'mainTask';
         }
     }
