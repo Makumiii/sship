@@ -25,7 +25,6 @@ echo "Linking sship executable..."
 # Use -f to force overwrite if symlink already exists
 ln -sf "$SSHIP_RUN_SCRIPT_PATH" "$SSHIP_BIN_PATH" || { echo "Error: Failed to create symlink."; exit 1; }
 
-echo "Making sship executable..."
-chmod +x "$SSHIP_BIN_PATH" || { echo "Error: Failed to make sship executable."; exit 1; }
+
 
 echo "Installation/Update complete."
