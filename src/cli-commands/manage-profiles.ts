@@ -11,7 +11,11 @@ export function registerManageProfilesCommand(program: Command) {
   profileCommand.command('create <profileName>')
     .description('Create a new profile.')
     .argument('[keys...]', 'List of keys to add to the profile')
-    .action(async (profileName, keys) => {
+    .action(async (profileName: string, keys: string[]) => {
+      if (!profileName) {
+        console.error("Profile name is required.");
+        return;
+      }
       if (!keys || keys.length === 0) {
         const availableKeys = getRawKeys();
         if (!availableKeys || availableKeys.length === 0) {
@@ -26,14 +30,22 @@ export function registerManageProfilesCommand(program: Command) {
 
   profileCommand.command('remove <profileName>')
     .description('Remove an existing profile.')
-    .action(async (profileName) => {
+    .action(async (profileName: string) => {
+      if (!profileName) {
+        console.error("Profile name is required.");
+        return;
+      }
       await removeProfile(profileName);
       console.log(`Profile '${profileName}' removed.`);
     });
 
   profileCommand.command('rename <oldName> <newName>')
     .description('Rename an existing profile.')
-    .action(async (oldName, newName) => {
+    .action(async (oldName: string, newName: string) => {
+      if (!oldName || !newName) {
+        console.error("Both old and new profile names are required.");
+        return;
+      }
       await renameProfile(newName, oldName);
       console.log(`Profile renamed from '${oldName}' to '${newName}'.`);
     });
