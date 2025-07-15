@@ -79,7 +79,7 @@ const profileSequence: NestedRunSequence = {
             console.log("Available Profiles:");
             for (const profileName in existingProfiles) {
                 console.log(`  - ${profileName}:`);
-                if (existingProfiles[profileName].ids && existingProfiles[profileName].ids.length > 0) {
+                if (Array.isArray(existingProfiles[profileName].ids) && existingProfiles[profileName].ids.length > 0) {
                     existingProfiles[profileName].ids.forEach(key => console.log(`    - ${key}`));
                 } else {
                     console.log("    (No keys associated)");
