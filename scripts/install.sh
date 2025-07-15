@@ -11,7 +11,7 @@ echo "Changing directory to sship..."
 cd "sship" || { echo "Error: Failed to change directory to sship."; exit 1; }
 
 echo "Linking run.sh to \$HOME/.local/bin/sship..."
-ln -s "$(pwd)/src/main.ts" "$HOME/.local/bin/sship" || { echo "Error: Failed to create symlink."; exit 1; }
+ln -s "$(pwd)/src/run.sh" "$HOME/.local/bin/sship" || { echo "Error: Failed to create symlink."; exit 1; }
 
 echo "Making sship executable..."
 chmod +x "$HOME/.local/bin/sship" || { echo "Error: Failed to make sship executable."; exit 1; }
