@@ -5,10 +5,14 @@ const location = homedir();
 
 const fullLocation = `${location}/.ssh`;
 
+export function getRawKeys() {
+  const files = getAllFiles(fullLocation);
+  return getKeys(files);
+}
+
 
 export default function listKeysCommand() {
-  const files = getAllFiles(fullLocation);
-  const pairNames = getKeys(files);
+  const pairNames = getRawKeys()
   if (pairNames.length === 0) {
     console.log("No keys found");
   } else {

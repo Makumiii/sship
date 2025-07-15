@@ -6,9 +6,11 @@ import createKeyCommand from "./commands/createKey.ts";
 import listKeysCommand from "./commands/listKeys.ts";
 import { runCommand } from "./command.ts";
 import backupCommand from "./commands/backup.ts";
+import { runNested } from "./nestedNav.ts";
+import profileSequence from "./manageProfiles.ts";
 
 
-const appTasks: Tasks[] = ["create", "delete", "backup", "list", 'uninstall'] ;
+const appTasks: Tasks[] = ["create", "delete", "backup", "list", 'uninstall', 'manageProfiles'] ;
 
 try {
   const chosenTask = await select<Tasks>("What do you want to do?", appTasks);
@@ -34,6 +36,13 @@ try {
     case 'uninstall': {
       await runCommand('./uninstall.sh')
       break;
+    }
+    case 'manageProfiles' : {
+
+      await runNested(profileSequence)
+      break;
+
+    
     }
 
   }
