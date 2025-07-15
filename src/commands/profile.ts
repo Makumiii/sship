@@ -24,7 +24,7 @@ async function ensureProfileInfraExists() {
     }
 }
 
-async function getProfilesData(): Promise<{ existingProfiles: SshipUserProfile, existingData: SshipUserConfig }> {
+export async function getProfilesData(): Promise<{ existingProfiles: SshipUserProfile, existingData: SshipUserConfig }> {
     await ensureProfileInfraExists();
     try {
         const data = await readFile(profileJsonPath, 'utf-8');
@@ -80,7 +80,7 @@ export async function addProfile(profileName:string, keys:string[]){
             ids:keys
         }
     }
-    const newProfiles:SshipUserProfile = {...data, ...newProfile};
+    const newProfiles:SshipUserProfile = {...data as SshipUserProfile, ...newProfile};
     await writeProfilesData(newProfiles,existingData );
     console.log('Profile created successfully');
     return
