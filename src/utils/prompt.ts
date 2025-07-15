@@ -5,7 +5,7 @@ import { writeResponses } from "./io.ts";
 export async function promptUser(message: UserPromptMessage[]) {
   const responses: Record<string, string> = {};
   for (const msg of message) {
-    const answer = await input({ message: msg.message });
+    const answer = await input({ message: msg.message, default: msg.initialValue });
     responses[msg.id] = answer;
   }
 

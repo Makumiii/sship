@@ -45,21 +45,36 @@ function deleteSelectedKey(selectedKey: string, files: string[]) {
   });
 }
 
-export default async function deleteCommand() {
+export default async function deleteCommand(keyName?: string, yes?: boolean) {
   const pairNames = getKeys(getAllFiles(fullLocation));
   if (pairNames.length === 0) {
     console.log("No keys found to delete");
     return;
   }
 
-  const choices = pairNames.filter((key) => key !== undefined)
+  const choices = pairNames.filter((key) => key !== undefined);
+  let selectedKey: string;
 
-  const selectedKey = await select<string>("Select a key to delete", choices);
+  if (keyName) {
+    if (!choices.includes(keyName)) {
+      console.error(`Key '${keyName}' not found.`);
+      return;
+    }
+    selectedKey = keyName;
+  } else {
+    selectedKey = await select<string>("Select a key to delete", choices);
+  }
 
-  const deleteResponse = await select<'Yes' | 'No'>(
-    `Are you sure you want to delete this key :${selectedKey} ?`,
-    ["Yes", "No"],
-  );
+  let deleteResponse: 'Yes' | 'No';
+  if (yes) {
+    deleteResponse = "Yes";
+  } else {
+    deleteResponse = await select<'Yes' | 'No'>(
+      `Are you sure you want to delete this key :${selectedKey} ?`,
+      ["Yes", "No"],
+    );
+  }
+
   if (deleteResponse === "No") {
     console.log("Aborting delete operation");
     return;

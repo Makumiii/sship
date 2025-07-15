@@ -8,9 +8,12 @@ const location = `${homedir()}/.ssh`;
 const tempDirLocation = tmpdir();
 const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
 
-export default async function backupCommand() {
-    
-    const encryptionKey = await promptUser([{id:'passphrase', message:'Enter a passphrase for the key'}]);
+export default async function backupCommand(options?: { passphrase?: string }) {
+    let passphrase = options?.passphrase;
+    if (!passphrase) {
+        const encryptionKey = await promptUser([{id:'passphrase', message:'Enter a passphrase for the key'}]);
+        passphrase = encryptionKey.passphrase;
+    }
     
     const backupTerms = ['id', 'config', 'known_hosts', 'authorized_keys', '.pem', '.pub']
     console.log(`Reading SSH directory: ${location}`);
@@ -34,7 +37,7 @@ export default async function backupCommand() {
         await copyFile(singleFileWithPath, destPath);
     }
 
-    const args = [privTempDir, encryptionKey.passphrase as unknown as string];
+    const args = [privTempDir, passphrase as string];
     console.log(`Running backup script with args: ${args.join(' ')}`);
 
     const pathToScript = resolve(import.meta.dir, '../../scripts/commands/backup.sh');

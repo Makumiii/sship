@@ -1,6 +1,7 @@
 export type UserPromptMessage = {
   message: string;
   id: string;
+  initialValue?: string;
 };
 
 export type tempWriteTasks = "create" | "task";
