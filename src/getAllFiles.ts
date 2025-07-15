@@ -1,7 +1,8 @@
+import { readdirSync, statSync } from "node:fs";
+
 export function getAllFiles(location: string) {
-  const filesIterator = Deno.readDirSync(location);
-  const files = Array.from(filesIterator).filter((file) => file.isFile).map((
-    file,
-  ) => file.name);
+  const files = readdirSync(location)
+    .filter((file) => statSync(`${location}/${file}`).isFile())
+    .map((file) => file);
   return files;
 }

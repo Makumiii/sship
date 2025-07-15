@@ -1,0 +1,44 @@
+import { promptUser } from "../prompt";
+import {homedir} from "node:os"
+import {readdir, copyFile, mkdtemp} from 'fs/promises'
+import {tmpdir} from 'os'
+import { runCommand } from "../command";
+import {basename} from 'path'
+const location = `${homedir()}/.ssh`;
+const tempDirLocation = tmpdir();
+const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
+
+export default async function backupCommand() {
+    
+    const encryptionKey = await promptUser([{id:'passphrase', message:'Enter a passphrase for the key'}]);
+    
+    const backupTerms = ['id', 'config', 'known_hosts', 'authorized_keys', '.pem', '.pub']
+    console.log(`Reading SSH directory: ${location}`);
+    const items = await readdir(location, { withFileTypes: true });
+    const files = items
+        .filter((item) => item.isFile)
+        .map((item) => item.name)
+        .filter((file) => backupTerms.some((term) => file.includes(term)));
+
+    if (files.length === 0) {
+        console.log("No files found matching backup terms.");
+        return;
+    }
+
+    console.log(`Found files to backup: ${files.join(', ')}`);
+    const filesWithPath = files.map((file) => `${location}/${file}`);
+
+    for (const singleFileWithPath of filesWithPath) {
+        const destPath = `${privTempDir}/${basename(singleFileWithPath)}`;
+        console.log(`Copying ${singleFileWithPath} to ${destPath}`);
+        await copyFile(singleFileWithPath, destPath);
+    }
+
+    const args = [privTempDir, encryptionKey.passphrase as unknown as string];
+    console.log(`Running backup script with args: ${args.join(' ')}`);
+
+    const pathToScript = `${import.meta.dir}/backup.sh`;
+
+    await runCommand(pathToScript, args);
+    console.log("Backup process completed.");
+}
