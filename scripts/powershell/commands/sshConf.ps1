@@ -24,7 +24,7 @@ $SSH_CONFIG = Join-Path $HOME ".ssh" "config"
 if (-not (Test-Path $SSH_CONFIG)) {
   New-Item -ItemType File -Path $SSH_CONFIG | Out-Null
 }
-Set-ItemProperty -LiteralPath $SSH_CONFIG -Name Mode -Value 0600 -Force
+
 
 # Remove existing entry for the host if it exists
 $configContent = Get-Content $SSH_CONFIG -Raw

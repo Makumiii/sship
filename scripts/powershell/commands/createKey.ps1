@@ -28,7 +28,7 @@ $SSH_DIR = "$HOME\.ssh"
 if (-not (Test-Path $SSH_DIR)) {
   New-Item -ItemType Directory -Path $SSH_DIR | Out-Null
 }
-Set-ItemProperty -LiteralPath $SSH_DIR -Name Mode -Value 0700 -Force
+
 
 $KEY_PATH = Join-Path $SSH_DIR $NAME
 
@@ -46,9 +46,6 @@ Write-Host "Your public key has been saved in ${KEY_PATH}.pub"
 # Display key fingerprint and randomart image
 ssh-keygen -lf "${KEY_PATH}.pub"
 ssh-keygen -lvf "${KEY_PATH}.pub"
-
-Set-ItemProperty -LiteralPath "$KEY_PATH" -Name Mode -Value 0600 -Force
-Set-ItemProperty -LiteralPath "${KEY_PATH}.pub" -Name Mode -Value 0644 -Force
 
 Write-Host "SSH key creation complete."
 
