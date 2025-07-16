@@ -17,6 +17,8 @@ SSHIP provides a comprehensive set of tools for efficient SSH key management:
 *   **Onboard (`sship onboard`):** Set up unaliased private SSH keys by adding them to your `~/.ssh/config` and associating them with SSHIP profiles.
 *   **Manage Profiles (`sship profile`):** Organize your SSH keys into profiles for easier management and access. Create, remove, rename, and list profiles.
 
+![SSHIP Screenshot](assets/sship-ss.png)
+
 ## Installation
 
 ### Prerequisites
