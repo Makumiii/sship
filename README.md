@@ -108,7 +108,19 @@ SSHIP is built as a modern Command-Line Interface (CLI) application using Bun an
 
 ## Installation
 
-To install SSHIP, ensure you have **Bun** installed on your system. Then, you can clone the repository and set it up:
+### Unix/Linux (Recommended)
+
+To install SSHIP on Unix-like systems, you can use the following command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Makumiii/sship/main/scripts/bash/install.sh | sh
+```
+
+This script will clone the repository, install dependencies, and set up the `sship` executable.
+
+### Manual Installation
+
+To install SSHIP manually, ensure you have **Bun** installed on your system. Then, you can clone the repository and set it up:
 
 ```bash
 git clone https://github.com/Makumiii/sship.git
