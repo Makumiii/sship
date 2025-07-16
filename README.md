@@ -2,7 +2,7 @@
 
 **SSHIP** - Simplify your SSH key management.
 
-SSHIP is a command-line tool that helps you manage your SSH keys. It allows you to easily create, delete, list, and back up your SSH keys, as well as configure SSH connections. SSHIP uses a combination of Deno/TypeScript for interactive prompts and Bash for system operations, providing a flexible and robust solution.
+SSHIP is a command-line tool that helps you manage your SSH keys. It allows you to easily create, delete, list, and back up your SSH keys, as well as configure SSH connections. SSHIP uses a modern Bun/TypeScript CLI with Commander.js for robust command-line parsing and interactive prompts, providing a flexible and efficient solution.
 
 ## Table of Contents
 
@@ -13,7 +13,6 @@ SSHIP is a command-line tool that helps you manage your SSH keys. It allows you 
 *   [Development](#development)
 *   [Contributing](#contributing)
 *   [License](#license)
-*   [Coming Soon](#coming-soon)
 
 ## Features
 
@@ -21,19 +20,20 @@ SSHIP offers a comprehensive set of features to manage your SSH keys efficiently
 
 *   **Key Creation (`create`):**
     *   Guides you through the process of generating new SSH key pairs.
-    *   Prompts for essential details such as email address (for key comment), passphrase (optional), key name, and the associated host and user for SSH configuration.
+    *   Supports command-line options (`-e`, `-p`, `-n`, `-h`, `-u`, `-P`) for non-interactive key generation.
+    *   Prompts for essential details such as email address (for key comment), passphrase (optional), key name, and the associated host and user for SSH configuration if not provided via options.
     *   Generates `ed25519` type keys by default.
     *   Automatically adds an entry to your `~/.ssh/config` file for easy access.
 
 *   **Key Deletion (`delete`):**
     *   Lists all detected SSH key pairs in your `~/.ssh/` directory.
-    *   Allows you to select a specific key to delete.
+    *   Allows you to select a specific key to delete interactively or specify it via command-line argument.
     *   Includes a confirmation step to prevent accidental deletions.
-    *   Deletes both the private and public key files associated with the selected key.
+    *   Deletes both the private and public key files associated with the selected key and removes its entry from `~/.ssh/config`.
 
 *   **Key Listing (`list`):**
     *   Scans your `~/.ssh/` directory for SSH key files (`.pub`, `.pem`, `.pkcs8`).
-    *   Presents a clean, numbered list of all identified SSH key names (e.g., `id_rsa`, `my_key`).
+    *   Presents a clean, numbered list of all identified SSH key names.
 
 *   **Backup (`backup`):**
     *   Creates a secure backup of your SSH keys and configuration files from `~/.ssh/`.
@@ -41,77 +41,107 @@ SSHIP offers a comprehensive set of features to manage your SSH keys efficiently
     *   Archives the selected files into a `tar.gz` file (`~/sship_backup.tar.gz`).
     *   Optionally encrypts the backup archive using `gpg` with a provided passphrase for enhanced security.
 
-*   **Configuration Helper (Internal - `sshConf.sh`):**
-    *   Automatically invoked during key creation.
-    *   Adds or updates entries in your `~/.ssh/config` file based on the key name, machine user, and host.
-    *   Ensures your SSH client can easily connect to your defined hosts using the correct identity file.
+*   **Connect (`connect`):**
+    *   Lists available SSH aliases from your `~/.ssh/config` file.
+    *   Allows you to select an alias to connect to interactively or specify it via command-line argument.
+    *   Initiates an SSH connection using the selected alias.
+
+*   **Doctor (`doctor`):**
+    *   Checks your `~/.ssh/config` file for entries that reference non-existent SSH key files.
+    *   Identifies and lists problematic entries.
+    *   Offers an interactive option to delete these invalid entries from your SSH config, helping to maintain a clean and functional configuration.
+
+*   **Onboarding (`onboard`):**
+    *   Helps users set up unaliased private SSH keys.
+    *   Scans your `~/.ssh/` directory for private keys that are not currently aliased in your `~/.ssh/config`.
+    *   For each unaliased key, it interactively prompts the user to:
+        *   Add a new alias for the key in `~/.ssh/config`.
+        *   Add the key to an existing or new SSHIP profile.
+
+*   **Manage Profiles (`manage-profiles`):**
+    *   Provides interactive options to create, remove, rename, and list SSHIP user profiles.
+    *   Profiles allow grouping related SSH keys for easier management.
 
 *   **Uninstallation (`uninstall`):**
     *   Removes the SSHIP application directory (`~/sship`).
     *   Deletes the symbolic link created during installation (`~/.local/bin/sship`).
 
+*   **Logging System:**
+    *   Utilizes `ora` spinners for interactive progress display in the terminal.
+    *   All application logs (info, success, failure, warnings) are written to `~/.sship/logs/sship.log` for persistent record-keeping and debugging.
+
 ## Architecture Overview
 
-SSHIP employs a hybrid architecture combining Bash shell scripting with Deno and TypeScript, offering a robust and flexible solution for SSH key management.
+SSHIP is built as a modern Command-Line Interface (CLI) application using Bun and TypeScript, leveraging the Commander.js library for robust command parsing and management. It integrates with Bash scripts for system-level operations.
 
-*   **Entry Point (`src/run.sh`):**
-    *   The primary executable script that users interact with.
-    *   Sets strict shell options (`set -euo pipefail`) for robust error handling.
-    *   Launches the main Deno application (`src/main.ts`) to present the initial task selection menu.
-    *   Reads the user's chosen task from a temporary JSON file (`/tmp/sship/sship-task-responses.json`).
-    *   Dispatches control to the appropriate command-specific Bash script (e.g., `src/commands/createKey.sh`, `src/commands/deleteKey.sh`) based on the user's selection.
+*   **Main Entry Point (`src/cli.ts`):**
+    *   This file serves as the primary entry point for the CLI, powered by Commander.js.
+    *   It registers all available commands (e.g., `create`, `delete`, `doctor`, `onboard`) and their respective options and actions.
+    *   Handles command-line argument parsing and dispatches control to the appropriate command handler.
 
-*   **Main Application Logic (`src/main.ts`):**
-    *   Written in TypeScript and executed by Deno.
-    *   Uses the `@inquirer/prompts` library for interactive command-line menus.
-    *   Presents the main menu of SSHIP tasks (create, delete, backup, list, uninstall).
-    *   Handles graceful exit on `Ctrl+C` by catching `ExitPromptError` from the inquirer library, ensuring a clean termination.
-    *   Writes the user's chosen task to a temporary JSON file for `run.sh` to read.
+*   **Interactive Mode (`src/main.ts`):**
+    *   Provides an interactive menu-driven interface for users who prefer guided execution.
+    *   Uses `@inquirer/prompts` for interactive selections and inputs.
+    *   Calls the same core command logic as the CLI mode, ensuring consistent behavior.
 
-*   **Command-Specific Logic (`src/commands/*.sh` and `src/commands/*.ts`):**
-    *   Each primary feature (create, delete, backup, list) has a dedicated Bash script (`.sh`) and a corresponding TypeScript file (`.ts`).
-    *   **Bash Scripts (`.sh`):** Handle system-level operations, file manipulation, and execution of external commands like `ssh-keygen`, `tar`, `gpg`, `jq`, and `deno run`. They act as orchestrators for their respective features.
-    *   **TypeScript Files (`.ts`):** Focus on user interaction, data validation, and complex logic that benefits from TypeScript's type safety and Deno's powerful APIs (e.g., reading directories, file deletion). They receive arguments from their parent Bash scripts and write responses back to temporary files.
+*   **Core Command Logic (`src/commands/*.ts`):**
+    *   Each feature (e.g., `createKey.ts`, `deleteKey.ts`, `doctor.ts`, `onboard.ts`) has a dedicated TypeScript file containing its core business logic.
+    *   These modules encapsulate the functionality and are designed to be reusable by both the CLI and interactive modes.
 
-*   **Core Utilities (`src/io.ts`, `src/select.ts`, `src/prompt.ts`, `src/types.ts`, `src/getAllFiles.ts`, `src/getKeys.ts`):**
-    *   **`src/io.ts`:** Manages reading from and writing to temporary JSON files (`/tmp/sship/`) to facilitate data exchange between Bash and Deno/TypeScript components.
-    *   **`src/select.ts`:** Provides a wrapper around `@inquirer/prompts` for creating interactive selection menus.
-    *   **`src/prompt.ts`:** Handles general user input prompts using `@inquirer/prompts`.
-    *   **`src/types.ts`:** Defines TypeScript interfaces and types for data structures used throughout the application, ensuring type safety and code clarity.
-    *   **`src/getAllFiles.ts`:** Utility to list files within a given directory.
-    *   **`src/getKeys.ts`:** Utility to extract SSH key names from a list of file names.
+*   **CLI Command Registration (`src/cli-commands/*.ts`):**
+    *   These files are responsible for registering each command with Commander.js, defining their descriptions, options, and actions.
+    *   They act as a bridge between the Commander.js framework and the core command logic.
 
-*   **Installation/Uninstallation Scripts (`src/install.sh`, `src/uninstall.sh`):**
-    *   Dedicated Bash scripts for setting up and tearing down the SSHIP environment, including cloning the repository and creating symbolic links for easy execution.
+*   **Bash Integration (`scripts/commands/*.sh`):**
+    *   For operations requiring direct system interaction (e.g., `ssh-keygen`, `tar`, `gpg`), SSHIP utilizes dedicated Bash scripts.
+    *   These scripts are called by the TypeScript command logic, passing necessary arguments and handling their output.
+
+*   **Utilities (`src/utils/*.ts`):**
+    *   A collection of helper modules providing common functionalities such as:
+        *   `logger.ts`: Centralized logging with Ora spinners and file output.
+        *   `prompt.ts`, `select.ts`: Wrappers for interactive user input.
+        *   `getAllFiles.ts`, `getKeys.ts`, `getPrivateKeys.ts`: File system and key identification helpers.
+        *   `manageProfiles.ts`: Logic for managing user profiles.
+        *   `command.ts`: Utility for running shell commands.
 
 ## Installation
 
-To install SSHIP, simply run the following command in your terminal:
+To install SSHIP, ensure you have **Bun** installed on your system. Then, you can clone the repository and set it up:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Makumiii/sship/main/src/install.sh | bash
+git clone https://github.com/Makumiii/sship.git
+cd sship
+bun install
 ```
 
-This script will:
-1.  Clone the SSHIP repository into your `$HOME/sship` directory.
-2.  Create a symbolic link to the `run.sh` script in `$HOME/.local/bin/sship`, making it globally accessible.
-3.  Make the `sship` executable.
-
 **Prerequisites:**
-*   `git`: For cloning the repository.
-*   `deno`: The JavaScript/TypeScript runtime.
+*   `Bun`: The JavaScript/TypeScript runtime.
 *   `jq`: A lightweight and flexible command-line JSON processor (used by Bash scripts).
 *   `gpg`: GNU Privacy Guard (for optional backup encryption).
 
 ## Usage
 
-After installation, you can run SSHIP from any directory in your terminal:
+SSHIP can be used in two primary ways:
 
-```bash
-sship
-```
+1.  **Interactive Mode:**
+    Run the main application to get an interactive menu:
+    ```bash
+    bun run src/main.ts
+    ```
+    Follow the on-screen prompts to choose your desired SSH key management task.
 
-This will present you with an interactive menu to choose your desired SSH key management task. Follow the on-screen prompts to complete the operations.
+2.  **CLI Mode:**
+    Execute specific commands directly with options. For example:
+    ```bash
+    bun run src/cli.ts create -n my_new_key -e my@example.com -p mypassphrase -h github.com -u git
+    bun run src/cli.ts delete my_old_key
+    bun run src/cli.ts doctor
+    bun run src/cli.ts onboard
+    ```
+    For help on any command, use the `--help` flag:
+    ```bash
+    bun run src/cli.ts create --help
+    ```
 
 ## Development
 
@@ -122,17 +152,21 @@ If you wish to contribute to SSHIP or run it directly from the source:
     git clone https://github.com/Makumiii/sship.git
     cd sship
     ```
-2.  **Install Deno:** Follow the instructions on the [Deno website](https://deno.land/#installation).
-3.  **Install `jq` and `gpg`:**
+2.  **Install Bun:** Follow the instructions on the [Bun website](https://bun.sh/#install).
+3.  **Install dependencies:**
+    ```bash
+    bun install
+    ```
+4.  **Install `jq` and `gpg`:**
     *   **Debian/Ubuntu:** `sudo apt-get install jq gnupg`
     *   **macOS (Homebrew):** `brew install jq gnupg`
-4.  **Run in development mode:**
+5.  **Run in development mode:**
     ```bash
-    deno task dev
+    bun run src/main.ts
     ```
-    Or directly execute the `run.sh` script:
+    Or directly execute CLI commands:
     ```bash
-    ./src/run.sh
+    bun run src/cli.ts [command] [options]
     ```
 
 ## Contributing
@@ -142,10 +176,3 @@ Contributions are welcome! If you have suggestions, bug reports, or want to cont
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Coming Soon
-
-*   **Auto-regeneration:** Automatically regenerate SSH keys after a set period for enhanced security.
-*   **Port Forwarding:** Establish local and remote port forwarding connections.
-*   **Smart Profiles:** Create and save frequently used SSH connection profiles.
-*   **One-shot Scripts:** Run single-use automation scripts via SSH.
