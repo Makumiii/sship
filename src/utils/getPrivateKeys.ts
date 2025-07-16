@@ -1,9 +1,8 @@
 import { homedir } from 'node:os';
 import { readdir } from 'node:fs/promises';
-import { join } from 'node:path';
 
 export async function getPrivateKeys(): Promise<string[]> {
-  const sshDir = join(homedir(), '.ssh');
+  const sshDir = `${homedir()}/.ssh`;
   try {
     const files = await readdir(sshDir);
     const privateKeys = files.filter(file => 
