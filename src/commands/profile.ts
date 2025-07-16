@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { homedir } from 'os';
 import { readFile, writeFile, access, mkdir } from 'fs/promises';
 import type { SshipUserConfig, SshipUserProfile } from '../types';
@@ -20,7 +21,7 @@ async function ensureProfileInfraExists() {
     } catch (e) {
         const defaultConfig: SshipUserConfig = { profiles: {} };
         await writeFile(profileJsonPath, JSON.stringify(defaultConfig, null, 2));
-        console.log(`Created initial profile file at ${profileJsonPath}`);
+        logger.succeed(`Created initial profile file at ${profileJsonPath}`);
     }
 }
 
@@ -35,7 +36,7 @@ export async function getProfilesData(): Promise<{ existingProfiles: SshipUserPr
         const existingProfiles = existingData.profiles as SshipUserProfile;
         return { existingProfiles, existingData };
     } catch (error) {
-        console.error(`Failed to read or parse profiles from ${profileJsonPath}:`, error);
+        logger.fail(`Failed to read or parse profiles from ${profileJsonPath}: ${error}`);
         const defaultConfig: SshipUserConfig = { profiles: {} };
         return { existingProfiles: defaultConfig.profiles, existingData: defaultConfig };
     }
@@ -46,9 +47,9 @@ async function writeProfilesData(profiles: SshipUserProfile, existingData: Sship
     try {
         existingData.profiles = profiles;
         await writeFile(profileJsonPath, JSON.stringify(existingData, null, 2));
-        console.log(`Profiles written to ${profileJsonPath}`);
+        logger.succeed(`Profiles written to ${profileJsonPath}`);
     } catch (error) {
-        console.error(`Failed to write profiles to ${profileJsonPath}:`, error);
+        logger.fail(`Failed to write profiles to ${profileJsonPath}: ${error}`);
         throw error;
     }
 }
@@ -71,7 +72,7 @@ export async function addProfile(profileName:string, keys:string[]){
         }
         profile.ids.push(...keys);
         await writeProfilesData(data, existingData);
-        console.log('Profile updated successfully');
+        logger.succeed('Profile updated successfully');
         return;
     }
     
@@ -82,7 +83,7 @@ export async function addProfile(profileName:string, keys:string[]){
     }
     const newProfiles:SshipUserProfile = {...data as SshipUserProfile, ...newProfile};
     await writeProfilesData(newProfiles,existingData );
-    console.log('Profile created successfully');
+    logger.succeed('Profile created successfully');
     return
     
 
@@ -94,14 +95,14 @@ export async function removeProfile(profileName:string){
     const {existingProfiles:data, existingData} = await getProfilesData()
 
     if (!profileExists(profileName, data)) {
-        console.error(`Profile ${profileName} does not exist.`);
+        logger.fail(`Profile ${profileName} does not exist.`);
         return;
     }
 
     const { [profileName]:unwanted,  ...rest} = data
 
     await writeProfilesData(rest, existingData);
-    console.log(`Profile ${unwanted} removed successfully.`);
+    logger.succeed(`Profile ${unwanted} removed successfully.`);
 
 }
 
@@ -111,12 +112,12 @@ export async function renameProfile(newName:string, oldName:string){
 
 
     if (!profileExists(oldName, data)) {
-        console.error(`Profile ${oldName} does not exist.`);
+        logger.fail(`Profile ${oldName} does not exist.`);
         return;
     }
 
     if (profileExists(newName, data)) {
-        console.error(`Profile ${newName} already exists.`);
+        logger.fail(`Profile ${newName} already exists.`);
         return;
     }
 
@@ -125,7 +126,7 @@ export async function renameProfile(newName:string, oldName:string){
     data[newName] = profileData;
 
     await writeProfilesData(data, existingData);
-    console.log(`Profile renamed from ${oldName} to ${newName} successfully.`);
+    logger.succeed(`Profile renamed from ${oldName} to ${newName} successfully.`);
 
 }
 

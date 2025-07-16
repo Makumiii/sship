@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { getPrivateKeys } from "../utils/getPrivateKeys.ts";
 import { parseSshConfig, type SshConfigEntry } from "./doctor.ts"; // Re-using parseSshConfig and SshConfigEntry
 import { promptUser } from "../utils/prompt.ts";
@@ -13,16 +14,16 @@ async function addSshConfigEntry(alias: string, identityFile: string) {
   const entry = `Host ${alias}\n  IdentityFile ${identityFile}\n`;
   try {
     await appendFile(sshConfigLocation, entry, "utf-8");
-    console.log(
+    logger.info(
       `Added alias '${alias}' for key '${identityFile}' to SSH config.`,
     );
   } catch (error) {
-    console.error(`Error adding SSH config entry for '${alias}':`, error);
+    logger.fail(`Error adding SSH config entry for '${alias}': ${error}`);
   }
 }
 
 export default async function onboardCommand() {
-  console.log("Starting SSH key onboarding...");
+  logger.start("Starting SSH key onboarding...");
 
   const privateKeys = await getPrivateKeys();
   const configEntries = await parseSshConfig();
@@ -40,15 +41,15 @@ export default async function onboardCommand() {
   });
 
   if (unaliasedPrivateKeys.length === 0) {
-    console.log(
+    logger.succeed(
       "No unaliased private keys found. Your SSH setup seems complete!",
     );
     return;
   }
 
-  console.log("Found unaliased private keys:");
+  logger.info("Found unaliased private keys:");
   for (const key of unaliasedPrivateKeys) {
-    console.log(`- ${key}`);
+    logger.info(`- ${key}`);
   }
 
   for (const key of unaliasedPrivateKeys) {
@@ -67,7 +68,7 @@ export default async function onboardCommand() {
       if (alias) {
         await addSshConfigEntry(alias, fullKeyPath);
       } else {
-        console.log("Alias creation skipped.");
+        logger.info("Alias creation skipped.");
       }
     } else if (action === "Add to Profile (Not Implemented Yet)") {
       const profileNames = await getProfileNames();
@@ -81,7 +82,7 @@ export default async function onboardCommand() {
           },
         ]);
         if(!newProfileResponse.newProfileName) {
-          console.log("Profile creation skipped.");
+          logger.info("Profile creation skipped.");
           continue;
         }
 
@@ -101,13 +102,13 @@ export default async function onboardCommand() {
           ]);
 
           if (!newProfileResponse.newProfileName) {
-            console.log("Profile creation skipped.");
+            logger.info("Profile creation skipped.");
             continue;
           }
           selectedProfile = newProfileResponse.newProfileName;
         } else {
           if(typeof profileChoice !== "string") {
-            console.error("Invalid profile selection.");
+            logger.fail("Invalid profile selection.");
             continue;
           }
           selectedProfile = profileChoice;
@@ -116,14 +117,14 @@ export default async function onboardCommand() {
 
       if (selectedProfile) {
         await addProfile(selectedProfile, [key]); // Add the key to the selected/new profile
-        console.log(`Added key '${key}' to profile '${selectedProfile}'.`);
+        logger.info(`Added key '${key}' to profile '${selectedProfile}'.`);
       } else {
-        console.log("Profile addition skipped.");
+        logger.info("Profile addition skipped.");
       }
     } else {
-      console.log(`Skipped key '${key}'.`);
+      logger.info(`Skipped key '${key}'.`);
     }
   }
 
-  console.log("Onboarding process finished.");
+  logger.succeed("Onboarding process finished.");
 }

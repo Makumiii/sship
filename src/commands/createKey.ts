@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { promptUser } from "../utils/prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
 import { spawn } from "bun";
@@ -55,5 +56,11 @@ export default async function createKeyCommand(options?: { email?: string; passp
     stderr:'inherit',
     stdin:'inherit',
   });
+  logger.start("Generating SSH key...");
   await command.exited;
+  if (command.exitCode === 0) {
+    logger.succeed("SSH key creation complete.");
+  } else {
+    logger.fail("SSH key creation failed.");
+  }
 }

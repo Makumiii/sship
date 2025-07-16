@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { promptUser } from "../utils/prompt";
 import {homedir} from "node:os"
 import {readdir, copyFile, mkdtemp} from 'fs/promises'
@@ -16,7 +17,7 @@ export default async function backupCommand(options?: { passphrase?: string }) {
     }
     
     const backupTerms = ['id', 'config', 'known_hosts', 'authorized_keys', '.pem', '.pub']
-    console.log(`Reading SSH directory: ${location}`);
+    logger.start(`Reading SSH directory: ${location}`);
     const items = await readdir(location, { withFileTypes: true });
     const files = items
         .filter((item) => item.isFile)
@@ -24,25 +25,25 @@ export default async function backupCommand(options?: { passphrase?: string }) {
         .filter((file) => backupTerms.some((term) => file.includes(term)));
 
     if (files.length === 0) {
-        console.log("No files found matching backup terms.");
+        logger.succeed("No files found matching backup terms.");
         return;
     }
 
-    console.log(`Found files to backup: ${files.join(', ')}`);
+    logger.succeed(`Found files to backup: ${files.join(', ')}`);
     const filesWithPath = files.map((file) => `${location}/${file}`);
 
     for (const singleFileWithPath of filesWithPath) {
         const destPath = `${privTempDir}/${basename(singleFileWithPath)}`;
-        console.log(`Copying ${singleFileWithPath} to ${destPath}`);
+        logger.start(`Copying ${singleFileWithPath} to ${destPath}`);
         await copyFile(singleFileWithPath, destPath);
     }
 
     const args = [privTempDir, passphrase as string];
-    console.log(`Running backup script with args: ${args.join(' ')}`);
+    logger.start(`Running backup script with args: ${args.join(' ')}`);
 
     const pathToScript = resolve(import.meta.dir, '../../scripts/commands/backup.sh');
-    console.log(`Path to backup script: ${pathToScript}`);
+    logger.start(`Path to backup script: ${pathToScript}`);
 
     await runCommand(pathToScript, args);
-    console.log("Backup process completed.");
+    logger.succeed("Backup process completed.");
 }

@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { homedir } from "node:os";
 import { readFile } from "node:fs/promises";
 import { access } from "node:fs/promises";
@@ -25,10 +26,10 @@ export async function parseSshConfig(): Promise<SshConfigEntry[]> {
     return entries;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      console.log("SSH config file not found. No entries to check.");
+      logger.info("SSH config file not found. No entries to check.");
       return [];
     }
-    console.error("Error reading SSH config:", error);
+    logger.fail(`Error reading SSH config: ${error}`);
     return [];
   }
 }
@@ -41,7 +42,7 @@ async function checkFileExists(filePath: string): Promise<boolean> {
   }
 }
 export default async function doctorCommand() {
-  console.log("Running SSH config doctor...");
+  logger.start("Running SSH config doctor...");
   const configEntries = await parseSshConfig();
   const problematicEntries: SshConfigEntry[] = [];
   for (const entry of configEntries) {
@@ -53,14 +54,14 @@ export default async function doctorCommand() {
     }
   }
   if (problematicEntries.length === 0) {
-    console.log(
+    logger.succeed(
       "No missing SSH key files found in your config. Your SSH config is healthy!",
     );
     return;
   }
-  console.log("Found missing SSH key files for the following hosts:");
+  logger.info("Found missing SSH key files for the following hosts:");
   for (const entry of problematicEntries) {
-    console.log(
+    logger.info(
       `- Host: ${entry.host}, Missing IdentityFile: ${entry.identityFile}`,
     );
   }
@@ -71,10 +72,10 @@ export default async function doctorCommand() {
     );
     if (confirmDelete === "Yes") {
       await deleteKeyAlias(entry.host);
-      console.log(`Deleted config entry for host '${entry.host}'.`);
+      logger.info(`Deleted config entry for host '${entry.host}'.`);
     } else {
-      console.log(`Skipped deleting config entry for host '${entry.host}'.`);
+      logger.info(`Skipped deleting config entry for host '${entry.host}'.`);
     }
   }
-  console.log("Doctor utility finished.");
+  logger.succeed("Doctor utility finished.");
 }
