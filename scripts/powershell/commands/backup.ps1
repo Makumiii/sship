@@ -14,7 +14,7 @@ if ([string]::IsNullOrEmpty($args[0]) -or [string]::IsNullOrEmpty($args[1])) {
 
 $TEMP_DIR = $args[0]
 $PASSPHRASE = $args[1]
-$BACKUP_FILE = "$HOME\sship_backup.tar.gz"
+$BACKUP_FILE = Join-Path $HOME "sship_backup.tar.gz"
 
 Write-Host "Creating tar archive..."
 tar -czf "$BACKUP_FILE" -C "$TEMP_DIR" .

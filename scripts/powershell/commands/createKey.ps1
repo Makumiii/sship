@@ -19,7 +19,7 @@ $responses = $JSON_RESPONSES | ConvertFrom-Json
 $EMAIL = $responses.email
 $PASSPHRASE = $responses.passphrase
 $NAME = $responses.name
-$HOST = $responses.host
+$SSH_HOST = $responses.host
 $USER = $responses.user
 $PROFILE = $responses.profile
 
@@ -30,7 +30,7 @@ if (-not (Test-Path $SSH_DIR)) {
 }
 Set-ItemProperty -LiteralPath $SSH_DIR -Name Mode -Value 0700 -Force
 
-$KEY_PATH = "$SSH_DIR\$NAME"
+$KEY_PATH = Join-Path $SSH_DIR $NAME
 
 # Generate SSH key
 Write-Host "Generating public/private ed25519 key pair."
@@ -47,9 +47,12 @@ Write-Host "Your public key has been saved in ${KEY_PATH}.pub"
 ssh-keygen -lf "${KEY_PATH}.pub"
 ssh-keygen -lvf "${KEY_PATH}.pub"
 
+Set-ItemProperty -LiteralPath "$KEY_PATH" -Name Mode -Value 0600 -Force
+Set-ItemProperty -LiteralPath "${KEY_PATH}.pub" -Name Mode -Value 0644 -Force
+
 Write-Host "SSH key creation complete."
 
 # Add SSH configuration
 Write-Host "SSH configuration for $NAME added to $SSH_DIR\config"
-& bun run src/scripts/commands/sshConf.ps1 "$NAME" "$HOST" "$USER" "$KEY_PATH" "$PROFILE"
+& "sship/scripts/powershell/commands/sshConf.ps1" "$NAME" "$SSH_HOST" "$USER" "$KEY_PATH" "$PROFILE"
 Write-Host "SSH configuration added."

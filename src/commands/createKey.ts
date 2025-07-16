@@ -50,9 +50,7 @@ export default async function createKeyCommand(options?: { email?: string; passp
 
   const responses = await promptUser(messages);
   const responsesJson = JSON.stringify(responses);
-  const scriptExtension = isWindows() ? '.ps1' : '.sh';
-  const scriptDir = isWindows() ? '../../scripts/powershell/commands' : '../../scripts/bash/commands';
-  const pathToScript = resolve(import.meta.dir, `${scriptDir}/createKey${scriptExtension}`);
+  const pathToScript = isWindows() ? 'scripts/powershell/commands/createKey.ps1' : 'scripts/bash/commands/createKey.sh';
 
   let commandArgs: string[];
   let commandToExecute: string;
