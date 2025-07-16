@@ -4,11 +4,11 @@ import { access } from "node:fs/promises";
 import { select } from "../utils/select.ts";
 import { deleteKeyAlias } from "./deleteKey.ts";
 const sshConfigLocation = `${homedir()}/.ssh/config`;
-interface SshConfigEntry {
+export interface SshConfigEntry {
   host: string;
   identityFile?: string;
 }
-async function parseSshConfig(): Promise<SshConfigEntry[]> {
+export async function parseSshConfig(): Promise<SshConfigEntry[]> {
   try {
     const configContent = await readFile(sshConfigLocation, "utf-8");
     const entries: SshConfigEntry[] = [];
