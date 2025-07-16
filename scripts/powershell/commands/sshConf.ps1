@@ -18,7 +18,7 @@ $USER = $args[2]
 $KEY_PATH = $args[3]
 $PROFILE = $args[4]
 
-$SSH_CONFIG = Join-Path $HOME ".ssh" "config"
+$SSH_CONFIG = Join-Path $HOME ".ssh\config"
 
 # Ensure the config file exists
 if (-not (Test-Path $SSH_CONFIG)) {
