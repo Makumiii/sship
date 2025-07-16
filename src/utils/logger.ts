@@ -32,14 +32,14 @@ export const logger = {
   succeed: (text: string) => {
     if (spinner) {
       spinner.succeed(text);
-      spinner = null;
+      spinner = null; // Clear spinner after it succeeds
     }
     writeToFile(`SUCCESS: ${text}`);
   },
   fail: (text: string) => {
     if (spinner) {
       spinner.fail(text);
-      spinner = null;
+      spinner = null; // Clear spinner after it fails
     }
     writeToFile(`FAIL: ${text}`);
   },
