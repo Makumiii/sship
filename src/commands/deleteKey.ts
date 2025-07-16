@@ -14,7 +14,7 @@ const sshConfigLocation = `${fullLocation}/config`;
 const blockRegex = (alias:string) => new RegExp(`^Host\\s+${alias}\\b(?:\\r?\\n(?!Host\\b)[ \\t]+\\S.*)*`,'m')
 
 
-async function deleteKeyAlias(alias:string){
+export async function deleteKeyAlias(alias:string){
   try{
     const config = await readFile(sshConfigLocation, 'utf-8');
     const regex = blockRegex(alias)
