@@ -1,5 +1,7 @@
 # SSHIP
 
+![SSHIP Screenshot](assets/sship-ss.png)
+
 **SSHIP** - Simplify your SSH key management.
 
 SSHIP is a command-line tool that helps you manage your SSH keys. It allows you to easily create, delete, list, and back up your SSH keys, as well as configure SSH connections. SSHIP uses a modern Bun/TypeScript CLI with Commander.js for robust command-line parsing and interactive prompts, providing a flexible and efficient solution.
