@@ -1,11 +1,12 @@
 export type UserPromptMessage = {
   message: string;
   id: string;
+  initialValue?: string;
 };
 
 export type tempWriteTasks = "create" | "task";
 
-export type Tasks = 'create' | 'backup' | 'delete' | 'list' | 'uninstall' | 'manageProfiles' | 'connect'
+export type Tasks = 'create' | 'backup' | 'delete' | 'list' | 'uninstall' | 'manageProfiles' | 'connect' | 'doctor';
 
 export type SshConfTemplate = {
   alias: string;

@@ -7,7 +7,7 @@ const pathToSshConfig = `${homedir()}/.ssh/config`;
 
 const regexToUse = /^Host[ \t]+\S+/gm
 
-export async function connectCommand(){
+export async function connectCommand(alias?: string){
 
     try{
         const config = await readFile(pathToSshConfig,'utf-8')
@@ -19,7 +19,17 @@ export async function connectCommand(){
             return;
         }
 
-        const selectedAlias = await select<string>('Select an SSH alias to connect:', availableAliases as string[]);
+        let selectedAlias: string;
+        if (alias) {
+            if (!availableAliases.includes(alias)) {
+                console.error(`Alias '${alias}' not found in SSH config.`);
+                return;
+            }
+            selectedAlias = alias;
+        } else {
+            selectedAlias = await select<string>('Select an SSH alias to connect:', availableAliases as string[]);
+        }
+        
         await runCommand('ssh', [selectedAlias])
         
 
