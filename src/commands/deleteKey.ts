@@ -83,6 +83,7 @@ export default async function deleteCommand(keyName?: string, yes?: boolean) {
 
   deleteSelectedKey(selectedKey, getAllFiles(fullLocation));
   await deleteKeyAlias(selectedKey);
+  
 }
 
 

@@ -1,6 +1,6 @@
 # SSHIP
 
-![SSHIP Screenshot](assets/sship-ss.png)
+![SSHIP Screenshot](assets/sship-logo.png)
 
 **SSHIP** simplifies your SSH key management directly from your command line. Easily create, delete, list, and back up your SSH keys, and streamline your SSH connections.
 
