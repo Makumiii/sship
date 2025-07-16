@@ -1,3 +1,4 @@
+import { logger } from "./utils/logger.ts";
 import { select } from "./utils/select.ts";
 import { ExitPromptError } from "@inquirer/core";
 import deleteCommand from "./commands/deleteKey.ts"; 
@@ -67,14 +68,14 @@ try {
 
 } catch (error) {
   if (error instanceof ExitPromptError) {
-    console.log("\n[SSHIP] main.ts: Aborted. Exiting gracefully.");
+    logger.info("\n[SSHIP] main.ts: Aborted. Exiting gracefully.");
     process.exit(130);
   } else {
-    console.error("[SSHIP] main.ts: An unexpected error occurred:", error);
+    logger.fail(`[SSHIP] main.ts: An unexpected error occurred: ${error}`);
   }
 }
 
 process.on('SIGINT', ()=>{
-  console.log("\n[SSHIP] main.ts: SIGINT received. Exiting gracefully.");
+  logger.info("\n[SSHIP] main.ts: SIGINT received. Exiting gracefully.");
   process.exit(130);
 })

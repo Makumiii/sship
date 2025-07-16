@@ -1,3 +1,4 @@
+import { logger } from "../utils/logger.ts";
 import { getAllFiles } from "../utils/getAllFiles.ts";
 import { select } from "../utils/select.ts";
 import { getKeys } from "../utils/getKeys.ts";
@@ -20,7 +21,7 @@ export async function deleteKeyAlias(alias:string){
     const regex = blockRegex(alias)
     const match = config.match(regex);
     if (!match) {
-      console.error(`No matching alias found for: ${alias}`);
+      logger.fail(`No matching alias found for: ${alias}`);
       return;
     }
     const newConfig = config.replace(regex, '')
@@ -30,7 +31,7 @@ export async function deleteKeyAlias(alias:string){
 
 
   }catch(e){
-    console.error("An error occurred while deleting the key alias:", e);
+    logger.fail(`An error occurred while deleting the key alias: ${e}`);
   }
 
 }
@@ -48,7 +49,7 @@ function deleteSelectedKey(selectedKey: string, files: string[]) {
 export default async function deleteCommand(keyName?: string, yes?: boolean) {
   const pairNames = getKeys(getAllFiles(fullLocation));
   if (pairNames.length === 0) {
-    console.log("No keys found to delete");
+    logger.info("No keys found to delete");
     return;
   }
 
@@ -57,7 +58,7 @@ export default async function deleteCommand(keyName?: string, yes?: boolean) {
 
   if (keyName) {
     if (!choices.includes(keyName)) {
-      console.error(`Key '${keyName}' not found.`);
+      logger.fail(`Key '${keyName}' not found.`);
       return;
     }
     selectedKey = keyName;
@@ -76,7 +77,7 @@ export default async function deleteCommand(keyName?: string, yes?: boolean) {
   }
 
   if (deleteResponse === "No") {
-    console.log("Aborting delete operation");
+    logger.info("Aborting delete operation");
     return;
   }
 
