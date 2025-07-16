@@ -9,9 +9,10 @@ import backupCommand from "./commands/backup.ts";
 import { runNested } from "./utils/nestedNav.ts";
 import profileSequence from "./utils/manageProfiles.ts";
 import { connectCommand } from "./commands/connect.ts";
+import doctorCommand from "./commands/doctor.ts";
 
 
-const appTasks: Tasks[] = ["create", "delete", "backup", "list", 'uninstall', 'manageProfiles', "connect"] ;
+const appTasks: Tasks[] = ["create", "delete", "backup", "list", 'uninstall', 'manageProfiles', "connect", "doctor"] ;
 
 try {
   const chosenTask = await select<Tasks>("What do you want to do?", appTasks);
@@ -48,6 +49,10 @@ try {
 
     case 'connect': {
       await connectCommand()
+      break;
+    }
+    case 'doctor': {
+      await doctorCommand()
       break;
     }
 

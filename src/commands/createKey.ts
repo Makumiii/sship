@@ -32,10 +32,21 @@ const promptMessages: UserPromptMessage[] = [
   }
 ];
 
-export default async function createKeyCommand() {
-  const currentDir = import.meta.dir
-  console.log('the current dir is ', currentDir)
-  const responses = await promptUser(promptMessages);
+export default async function createKeyCommand(options?: { email?: string; passphrase?: string; name?: string; host?: string; user?: string; profile?: string; }) {
+  const messages: UserPromptMessage[] = promptMessages.map(msg => {
+    let initialValue: string | undefined;
+    switch (msg.id) {
+      case 'email': initialValue = options?.email; break;
+      case 'passphrase': initialValue = options?.passphrase; break;
+      case 'name': initialValue = options?.name; break;
+      case 'host': initialValue = options?.host; break;
+      case 'user': initialValue = options?.user; break;
+      case 'profile': initialValue = options?.profile; break;
+    }
+    return { ...msg, initialValue };
+  });
+
+  const responses = await promptUser(messages);
   const responsesJson = JSON.stringify(responses);
   const pathToScript = resolve(import.meta.dir, '../../scripts/commands/createKey.sh');
 
