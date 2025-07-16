@@ -5,7 +5,8 @@ import {readdir, copyFile, mkdtemp} from 'fs/promises'
 import {tmpdir} from 'os'
 import { runCommand } from "../utils/command";
 import {basename, resolve, join} from 'path'
-const location = `${homedir()}/.ssh`;
+import { isWindows } from "../utils/osDetect.ts";
+const location = join(homedir(), '.ssh');
 const tempDirLocation = tmpdir();
 const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
 
@@ -30,10 +31,10 @@ export default async function backupCommand(options?: { passphrase?: string }) {
     }
 
     logger.succeed(`Found files to backup: ${files.join(', ')}`);
-    const filesWithPath = files.map((file) => `${location}/${file}`);
+    const filesWithPath = files.map((file) => join(location, file));
 
     for (const singleFileWithPath of filesWithPath) {
-        const destPath = `${privTempDir}/${basename(singleFileWithPath)}`;
+        const destPath = join(privTempDir, basename(singleFileWithPath));
         logger.start(`Copying ${singleFileWithPath} to ${destPath}`);
         await copyFile(singleFileWithPath, destPath);
     }
@@ -41,10 +42,16 @@ export default async function backupCommand(options?: { passphrase?: string }) {
     const args = [privTempDir, passphrase as string];
     logger.start(`Running backup script with args: ${args.join(' ')}`);
 
-    const pathToScript = join(process.cwd(), 'scripts', 'commands', 'backup.sh');
-    console.log('current working directory:', process.cwd());
+    const scriptExtension = isWindows() ? '.ps1' : '.sh';
+    const scriptDir = isWindows() ? 'scripts/powershell/commands' : 'scripts/bash/commands';
+    const pathToScript = join(process.cwd(), scriptDir, `backup${scriptExtension}`);
+
     logger.start(`Path to backup script: ${pathToScript}`);
 
-    await runCommand(pathToScript, args);
+    if (isWindows()) {
+        await runCommand('powershell.exe', ['-File', pathToScript, ...args]);
+    } else {
+        await runCommand(pathToScript, args);
+    }
     logger.succeed("Backup process completed.");
 }

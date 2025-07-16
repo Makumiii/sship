@@ -1,6 +1,6 @@
 # SSHIP
 
-![SSHIP Screenshot](assets/sship-logo.png)
+![SSHIP Logo](assets/sship-logo.png)
 
 **SSHIP** simplifies your SSH key management directly from your command line. Easily create, delete, list, and back up your SSH keys, and streamline your SSH connections.
 
@@ -42,19 +42,13 @@ This command installs two executables:
 *   `sship`: The main command-line interface for direct command execution.
 *   `sship-main`: Launches the interactive menu-driven interface.
 
-### Via Script (Unix/Linux)
+### Via Script (Unix/Linux) or Manual Installation
 
-For Unix-like systems, you can use the quick installation script:
+For Unix-like systems, you can use the quick installation script, or perform a manual setup:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Makumiii/sship/main/scripts/bash/install.sh | sh
-```
-
-### Manual Installation
-
-If you prefer a manual setup:
-
-```bash
+# OR
 git clone https://github.com/Makumiii/sship.git
 cd sship
 bun install

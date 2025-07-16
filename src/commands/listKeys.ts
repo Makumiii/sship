@@ -1,10 +1,11 @@
 import { logger } from "../utils/logger.ts";
 import { homedir } from 'node:os'
+import { join } from 'node:path';
 import { getAllFiles } from "../utils/getAllFiles.ts";
 import { getKeys } from "../utils/getKeys.ts";
 const location = homedir();
 
-const fullLocation = `${location}/.ssh`;
+const fullLocation = join(location, '.ssh');
 
 export function getRawKeys() {
   const files = getAllFiles(fullLocation);

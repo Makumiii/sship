@@ -5,12 +5,15 @@ import { getKeys } from "../utils/getKeys.ts";
 import { unlinkSync } from "node:fs";
 import {homedir} from 'node:os'
 import {readFile, writeFile} from 'fs/promises'
+import { isWindows } from "../utils/osDetect.ts";
+import { runCommand } from "../utils/command.ts";
+import { resolve, join } from "path";
 
 // get files in ssh dir
 const location = homedir()
-const fullLocation = `${location}/.ssh`;
+const fullLocation = join(location, '.ssh');
 
-const sshConfigLocation = `${fullLocation}/config`;
+const sshConfigLocation = join(fullLocation, 'config');
 
 const blockRegex = (alias:string) => new RegExp(`^Host\\s+${alias}\\b(?:\\r?\\n(?!Host\\b)[ \\t]+\\S.*)*`,'m')
 
@@ -36,14 +39,21 @@ export async function deleteKeyAlias(alias:string){
 
 }
 
-function deleteSelectedKey(selectedKey: string, files: string[]) {
+async function deleteSelectedKey(selectedKey: string, files: string[]) {
   const filesToDelete = files.filter((file) => file.includes(selectedKey));
 
-  filesToDelete.forEach((file) => {
-    const filePath = `${fullLocation}/${file}`;
+  const scriptExtension = isWindows() ? '.ps1' : '.sh';
+  const scriptDir = isWindows() ? '../../scripts/powershell/commands' : '../../scripts/bash/commands';
+  const pathToScript = resolve(import.meta.dir, `${scriptDir}/deleteFile${scriptExtension}`);
 
-    unlinkSync(filePath);
-  });
+  for (const file of filesToDelete) {
+    const filePath = join(fullLocation, file);
+    if (isWindows()) {
+      await runCommand('powershell.exe', ['-File', pathToScript, filePath]);
+    } else {
+      await runCommand(pathToScript, [filePath]);
+    }
+  }
 }
 
 export default async function deleteCommand(keyName?: string, yes?: boolean) {
