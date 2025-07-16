@@ -1,4 +1,5 @@
-import {homedir} from 'node:os'
+import { logger } from "../utils/logger.ts";
+import { homedir } from 'node:os'
 import { getAllFiles } from "../utils/getAllFiles.ts";
 import { getKeys } from "../utils/getKeys.ts";
 const location = homedir();
@@ -14,12 +15,12 @@ export function getRawKeys() {
 export default function listKeysCommand() {
   const pairNames = getRawKeys()
   if (pairNames.length === 0) {
-    console.log("No keys found");
+    logger.info("No keys found");
   } else {
-    console.log("List of keys:");
+    logger.info("List of keys:");
     let i = 1;
     pairNames.forEach((key) => {
-      console.log(`${i}. ${key}`);
+      logger.info(`${i}. ${key}`);
       i++;
     });
   }
