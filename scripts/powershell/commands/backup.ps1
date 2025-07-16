@@ -20,7 +20,7 @@ Write-Host "Creating tar archive..."
 tar -czf "$BACKUP_FILE" -C "$TEMP_DIR" .
 
 Write-Host "Encrypting backup file..."
-gpg --batch --yes --passphrase "$PASSPHRASE" -c "$BACKUP_FILE"
+& gpg --batch --yes --passphrase "$PASSPHRASE" -c "$BACKUP_FILE"
 
 Write-Host "Removing unencrypted backup file..."
 Remove-Item -Path "$BACKUP_FILE"
