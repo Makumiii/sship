@@ -51,5 +51,5 @@ Write-Host "SSH key creation complete."
 
 # Add SSH configuration
 Write-Host "SSH configuration for $NAME added to $SSH_DIR\config"
-& "sship/scripts/powershell/commands/sshConf.ps1" "$NAME" "$SSH_HOST" "$USER" "$KEY_PATH" "$PROFILE"
+& (Join-Path $PSScriptRoot "sshConf.ps1") "$NAME" "$SSH_HOST" "$USER" "$KEY_PATH" "$PROFILE"
 Write-Host "SSH configuration added."
