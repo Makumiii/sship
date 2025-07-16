@@ -1,5 +1,7 @@
 # SSHIP
 
+![SSHIP Screenshot](assets/sship-ss.png)
+
 **SSHIP** - Simplify your SSH key management.
 
 SSHIP is a command-line tool that helps you manage your SSH keys. It allows you to easily create, delete, list, and back up your SSH keys, as well as configure SSH connections. SSHIP uses a modern Bun/TypeScript CLI with Commander.js for robust command-line parsing and interactive prompts, providing a flexible and efficient solution.
@@ -84,19 +86,19 @@ SSHIP is built as a modern Command-Line Interface (CLI) application using Bun an
     *   Uses `@inquirer/prompts` for interactive selections and inputs.
     *   Calls the same core command logic as the CLI mode, ensuring consistent behavior.
 
-*   **Core Command Logic (`src/commands/*.ts`):**
+*   **Core Command Logic (`src/commands/*.ts`):
     *   Each feature (e.g., `createKey.ts`, `deleteKey.ts`, `doctor.ts`, `onboard.ts`) has a dedicated TypeScript file containing its core business logic.
     *   These modules encapsulate the functionality and are designed to be reusable by both the CLI and interactive modes.
 
-*   **CLI Command Registration (`src/cli-commands/*.ts`):**
+*   **CLI Command Registration (`src/cli-commands/*.ts`):
     *   These files are responsible for registering each command with Commander.js, defining their descriptions, options, and actions.
     *   They act as a bridge between the Commander.js framework and the core command logic.
 
-*   **Bash Integration (`scripts/commands/*.sh`):**
+*   **Bash Integration (`scripts/commands/*.sh`):
     *   For operations requiring direct system interaction (e.g., `ssh-keygen`, `tar`, `gpg`), SSHIP utilizes dedicated Bash scripts.
     *   These scripts are called by the TypeScript command logic, passing necessary arguments and handling their output.
 
-*   **Utilities (`src/utils/*.ts`):**
+*   **Utilities (`src/utils/*.ts`):
     *   A collection of helper modules providing common functionalities such as:
         *   `logger.ts`: Centralized logging with Ora spinners and file output.
         *   `prompt.ts`, `select.ts`: Wrappers for interactive user input.
@@ -106,7 +108,19 @@ SSHIP is built as a modern Command-Line Interface (CLI) application using Bun an
 
 ## Installation
 
-To install SSHIP, ensure you have **Bun** installed on your system. Then, you can clone the repository and set it up:
+### Unix/Linux (Recommended)
+
+To install SSHIP on Unix-like systems, you can use the following command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Makumiii/sship/main/scripts/bash/install.sh | sh
+```
+
+This script will clone the repository, install dependencies, and set up the `sship` executable.
+
+### Manual Installation
+
+To install SSHIP manually, ensure you have **Bun** installed on your system. Then, you can clone the repository and set it up:
 
 ```bash
 git clone https://github.com/Makumiii/sship.git
