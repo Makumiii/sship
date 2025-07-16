@@ -4,7 +4,7 @@ import {homedir} from "node:os"
 import {readdir, copyFile, mkdtemp} from 'fs/promises'
 import {tmpdir} from 'os'
 import { runCommand } from "../utils/command";
-import {basename, resolve} from 'path'
+import {basename, resolve, join} from 'path'
 const location = `${homedir()}/.ssh`;
 const tempDirLocation = tmpdir();
 const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
@@ -41,7 +41,8 @@ export default async function backupCommand(options?: { passphrase?: string }) {
     const args = [privTempDir, passphrase as string];
     logger.start(`Running backup script with args: ${args.join(' ')}`);
 
-    const pathToScript = resolve(import.meta.dir, '../../scripts/commands/backup.sh');
+    const pathToScript = join(process.cwd(), 'scripts', 'commands', 'backup.sh');
+    console.log('current working directory:', process.cwd());
     logger.start(`Path to backup script: ${pathToScript}`);
 
     await runCommand(pathToScript, args);

@@ -1,3 +1,4 @@
 botanalysis.md
 node_modules
 pnpm-lock.yaml
+dist/

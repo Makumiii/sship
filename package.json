@@ -5,6 +5,9 @@
   "bin": {
     "sship": "./src/cli.ts"
   },
+  "scripts": {
+    "build": "bun build src/cli.ts src/main.ts --outdir dist --target=node" 
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "prettier": "^3.6.2"

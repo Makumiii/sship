@@ -1,8 +1,8 @@
 import { logger } from "../utils/logger.ts";
 import { promptUser } from "../utils/prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
-import { spawn } from "bun";
-import {resolve} from "path";
+import { spawn } from "child_process";
+import {resolve, join} from "path";
 
 const promptMessages: UserPromptMessage[] = [
   {
@@ -49,16 +49,17 @@ export default async function createKeyCommand(options?: { email?: string; passp
 
   const responses = await promptUser(messages);
   const responsesJson = JSON.stringify(responses);
-  const pathToScript = resolve(import.meta.dir, '../../scripts/commands/createKey.sh');
+  const pathToScript = join(process.cwd(), 'scripts', 'commands', 'createKey.sh');
 
-  const command = spawn([pathToScript, responsesJson], {
-    stdout:'inherit',
-    stderr:'inherit',
-    stdin:'inherit',
+  const command = spawn(pathToScript, [responsesJson], {
+    stdio:'inherit',
   });
   logger.start("Generating SSH key...");
-  await command.exited;
-  if (command.exitCode === 0) {
+  const exitCode = await new Promise<number>((resolve, reject) => {
+    command.on('close', resolve);
+    command.on('error', reject);
+  });
+  if (exitCode === 0) {
     logger.succeed("SSH key creation complete.");
   } else {
     logger.fail("SSH key creation failed.");
