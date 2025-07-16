@@ -7,10 +7,11 @@ export async function runCommand(scriptPath: string, args: string[] = []) {
         stderr: 'inherit',
         stdin: 'inherit',
         });
-        await command.exited;
+        const exitCode = await command.exited;
+        return { exitCode };
     } catch (error) {
         console.error(`[SSHIP] Error executing command: ${error}`);
-        process.exit(1);
+        return { exitCode: 1 }; // Return a non-zero exit code on error
     }
 
 }

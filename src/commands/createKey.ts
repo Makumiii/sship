@@ -1,7 +1,7 @@
 import { logger } from "../utils/logger.ts";
 import { promptUser } from "../utils/prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
-import { spawn } from "bun";
+import { runCommand } from "../utils/command.ts";
 import {resolve} from "path";
 import { isWindows } from "../utils/osDetect.ts";
 
@@ -54,14 +54,21 @@ export default async function createKeyCommand(options?: { email?: string; passp
   const scriptDir = isWindows() ? '../../scripts/powershell/commands' : '../../scripts/bash/commands';
   const pathToScript = resolve(import.meta.dir, `${scriptDir}/createKey${scriptExtension}`);
 
-  const command = spawn([scriptExtension === '.ps1' ? 'powershell.exe' : pathToScript, scriptExtension === '.ps1' ? '-File' : '', pathToScript, responsesJson], {
-    stdout:'inherit',
-    stderr:'inherit',
-    stdin:'inherit',
-  });
+  let commandArgs: string[];
+  let commandToExecute: string;
+
+  if (isWindows()) {
+    commandToExecute = 'powershell.exe';
+    commandArgs = ['-File', pathToScript, responsesJson];
+  } else {
+    commandToExecute = pathToScript;
+    commandArgs = [responsesJson];
+  }
+
   logger.start("Generating SSH key...");
-  await command.exited;
-  if (command.exitCode === 0) {
+  const { exitCode } = await runCommand(commandToExecute, commandArgs);
+
+  if (exitCode === 0) {
     logger.succeed("SSH key creation complete.");
   } else {
     logger.fail("SSH key creation failed.");
