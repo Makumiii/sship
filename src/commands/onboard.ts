@@ -4,10 +4,11 @@ import { parseSshConfig, type SshConfigEntry } from "./doctor.ts"; // Re-using p
 import { promptUser } from "../utils/prompt.ts";
 import { select } from "../utils/select.ts";
 import { homedir } from "node:os";
+import { join } from "node:path";
 import { getProfileNames, addProfile } from "../commands/profile.ts";
 import { appendFile } from "node:fs/promises";
 
-const sshConfigLocation = `${homedir()}/.ssh/config`;
+const sshConfigLocation = join(homedir(), '.ssh', 'config');
 
 // New utility to add an entry to SSH config
 async function addSshConfigEntry(alias: string, identityFile: string) {
@@ -36,7 +37,7 @@ export default async function onboardCommand() {
 
   const unaliasedPrivateKeys = privateKeys.filter((key) => {
     // Check if the full path of the key is aliased
-    const fullPath = `${homedir()}/.ssh/${key}`;
+    const fullPath = join(homedir(), '.ssh', key);
     return !aliasedKeys.has(fullPath);
   });
 
@@ -53,7 +54,7 @@ export default async function onboardCommand() {
   }
 
   for (const key of unaliasedPrivateKeys) {
-    const fullKeyPath = `${homedir()}/.ssh/${key}`;
+    const fullKeyPath = join(homedir(), '.ssh', key);
     const action = await select(`What do you want to do with key '${key}'?`, [
       "Add Alias",
       "Add to Profile",

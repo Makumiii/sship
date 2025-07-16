@@ -1,12 +1,13 @@
 import { logger } from "../utils/logger.ts";
 import { homedir } from 'os';
+import { join } from 'path';
 import { readFile, writeFile, access, mkdir } from 'fs/promises';
 import type { SshipUserConfig, SshipUserProfile } from '../types';
 import { constants } from 'fs';
 
 const homeLocation = homedir();
-const sshipDir = `${homeLocation}/.sship`;
-const profileJsonPath = `${sshipDir}/profiles.json`;
+const sshipDir = join(homeLocation, '.sship');
+const profileJsonPath = join(sshipDir, 'profiles.json');
 
 // Utility function to ensure directory and file exist
 async function ensureProfileInfraExists() {

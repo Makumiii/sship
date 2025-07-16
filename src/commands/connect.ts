@@ -1,10 +1,11 @@
 import { logger } from "../utils/logger.ts";
 import {readFile} from 'fs/promises'
 import { homedir } from 'os';
+import { join } from 'path';
 import { availableMemory } from 'process';
 import { select } from '../utils/select';
 import { runCommand } from '../utils/command';
-const pathToSshConfig = `${homedir()}/.ssh/config`;
+const pathToSshConfig = join(homedir(), '.ssh', 'config');
 
 const regexToUse = /^Host[ \t]+\S+/gm
 

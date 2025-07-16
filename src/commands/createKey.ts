@@ -3,6 +3,7 @@ import { promptUser } from "../utils/prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
 import { spawn } from "bun";
 import {resolve} from "path";
+import { isWindows } from "../utils/osDetect.ts";
 
 const promptMessages: UserPromptMessage[] = [
   {
@@ -49,9 +50,11 @@ export default async function createKeyCommand(options?: { email?: string; passp
 
   const responses = await promptUser(messages);
   const responsesJson = JSON.stringify(responses);
-  const pathToScript = resolve(import.meta.dir, '../../scripts/commands/createKey.sh');
+  const scriptExtension = isWindows() ? '.ps1' : '.sh';
+  const scriptDir = isWindows() ? '../../scripts/powershell/commands' : '../../scripts/bash/commands';
+  const pathToScript = resolve(import.meta.dir, `${scriptDir}/createKey${scriptExtension}`);
 
-  const command = spawn([pathToScript, responsesJson], {
+  const command = spawn([scriptExtension === '.ps1' ? 'powershell.exe' : pathToScript, scriptExtension === '.ps1' ? '-File' : '', pathToScript, responsesJson], {
     stdout:'inherit',
     stderr:'inherit',
     stdin:'inherit',
