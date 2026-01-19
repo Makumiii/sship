@@ -6,7 +6,7 @@ import type { ServerConfig } from "../types/serverTypes.ts";
 
 const SSH_CONFIG_PATH = join(homedir(), ".ssh", "config");
 
-function generateSshConfigBlock(server: ServerConfig): string {
+export function generateSshConfigBlock(server: ServerConfig): string {
     return `
 # Added by sship - ${server.name}
 Host ${server.name}
