@@ -6,7 +6,7 @@ export type UserPromptMessage = {
 
 export type tempWriteTasks = "create" | "task";
 
-export type Tasks = 'create' | 'backup' | 'delete' | 'list' | 'uninstall' | 'manageProfiles' | 'connect' | 'doctor' | 'onboard';
+export type Tasks = 'create' | 'backup' | 'delete' | 'list' | 'uninstall' | 'manageProfiles' | 'connect' | 'doctor' | 'onboard' | 'servers';
 
 export type SshConfTemplate = {
   alias: string;
@@ -19,13 +19,13 @@ export type SshConfTemplate = {
 
 
 export type SshipUserProfile = {
-    [profileName:string]:{
-    ids:string[]
+  [profileName: string]: {
+    ids: string[]
 
   }
 
 }
 
 export type SshipUserConfig = {
-  profiles:SshipUserProfile
+  profiles: SshipUserProfile
 }

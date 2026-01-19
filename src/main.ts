@@ -1,7 +1,7 @@
 import { logger } from "./utils/logger.ts";
 import { select } from "./utils/select.ts";
 import { ExitPromptError } from "@inquirer/core";
-import deleteCommand from "./commands/deleteKey.ts"; 
+import deleteCommand from "./commands/deleteKey.ts";
 import type { Tasks } from "./types.ts";
 import createKeyCommand from "./commands/createKey.ts";
 import listKeysCommand from "./commands/listKeys.ts";
@@ -12,13 +12,14 @@ import profileSequence from "./utils/manageProfiles.ts";
 import { connectCommand } from "./commands/connect.ts";
 import doctorCommand from "./commands/doctor.ts";
 import onboardCommand from "./commands/onboard.ts";
+import { serversCommand } from "./commands/servers.ts";
 
 
-const appTasks: Tasks[] = ["create", "delete", "backup", "list", 'uninstall', 'manageProfiles', "connect", "doctor", "onboard"] ;
+const appTasks: Tasks[] = ["create", "delete", "backup", "list", 'uninstall', 'manageProfiles', "connect", "servers", "doctor", "onboard"];
 
 try {
   const chosenTask = await select<Tasks>("What do you want to do?", appTasks);
-  switch(chosenTask){
+  switch (chosenTask) {
     case 'create': {
       await createKeyCommand()
       break;
@@ -27,9 +28,9 @@ try {
       await deleteCommand()
 
       break;
-      
+
     }
-    case 'list':{
+    case 'list': {
       listKeysCommand()
       break
     }
@@ -41,12 +42,12 @@ try {
       await runCommand('../scripts/uninstall.sh')
       break;
     }
-    case 'manageProfiles' : {
+    case 'manageProfiles': {
 
       await runNested(profileSequence)
       break;
 
-    
+
     }
 
     case 'connect': {
@@ -59,6 +60,10 @@ try {
     }
     case 'onboard': {
       await onboardCommand()
+      break;
+    }
+    case 'servers': {
+      await serversCommand()
       break;
     }
 
@@ -75,7 +80,7 @@ try {
   }
 }
 
-process.on('SIGINT', ()=>{
+process.on('SIGINT', () => {
   logger.info("\n[SSHIP] main.ts: SIGINT received. Exiting gracefully.");
   process.exit(130);
 })
