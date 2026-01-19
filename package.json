@@ -1,6 +1,7 @@
 {
   "name": "sship",
-  "version": "0.2.1",
+  "version": "0.2.2",
+  "description": "The ultimate SSH companion tool with built-in Synergy (SFTP) file transfer.",
   "type": "module",
   "private": false,
   "bin": {
