@@ -214,11 +214,12 @@ async function deleteServerFlow(): Promise<void> {
     const serverNames = servers.map((s) => s.name);
     const selectedName = await select<string>("Select server to delete:", serverNames);
 
-    const confirm = await input({
-        message: `Are you sure you want to delete "${selectedName}"? (yes/no):`
-    });
+    const confirm = await select<"Yes" | "No">(
+        `Delete server "${selectedName}"?`,
+        ["Yes", "No"]
+    );
 
-    if (confirm.toLowerCase() !== "yes" && confirm.toLowerCase() !== "y") {
+    if (confirm !== "Yes") {
         logger.info("Cancelled.");
         return;
     }
@@ -268,10 +269,20 @@ async function testConnectionFlow(): Promise<void> {
     }
 }
 
-export async function serversCommand(): Promise<void> {
-    const actions: ServerAction[] = ["add", "list", "connect", "edit", "delete", "test", "back"];
+import type { SelectChoice } from "../utils/select.ts";
 
-    const action = await select<ServerAction>("Server Management:", actions);
+export async function serversCommand(): Promise<void> {
+    const menuChoices: SelectChoice<ServerAction>[] = [
+        { name: "➕  Add Server", value: "add" },
+        { name: "📋  List Servers", value: "list" },
+        { name: "🔗  Connect to Server", value: "connect" },
+        { name: "✏️   Edit Server", value: "edit" },
+        { name: "🗑️   Delete Server", value: "delete" },
+        { name: "🧪  Test Connection", value: "test" },
+        { name: "⬅️   Back", value: "back" },
+    ];
+
+    const action = await select<ServerAction>("Server Management:", menuChoices);
 
     switch (action) {
         case "add":

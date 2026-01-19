@@ -1,14 +1,13 @@
 {
   "name": "sship",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "private": false,
   "bin": {
-    "sship-cli": "./dist/cli.js",
-    "sship": "./dist/main.js"
+    "sship": "./dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/cli.ts src/main.ts --outdir dist --target=node" 
+    "build": "bun build src/index.ts --outdir dist --target=node"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -28,7 +27,10 @@
     "linux",
     "darwin"
   ],
-  "files": ["dist", "scripts"], 
+  "files": [
+    "dist",
+    "scripts"
+  ],
   "author": {
     "email": "superdevmaks@gmail.com",
     "name": "Makumi John Mutua",

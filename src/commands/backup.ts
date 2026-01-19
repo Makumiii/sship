@@ -1,22 +1,25 @@
 import { logger } from "../utils/logger.ts";
 import { promptUser } from "../utils/prompt";
-import {homedir} from "node:os"
-import {readdir, copyFile, mkdtemp} from 'fs/promises'
-import {tmpdir} from 'os'
+import { homedir } from "node:os";
+import { readdir, copyFile, mkdtemp } from "fs/promises";
+import { tmpdir } from "os";
 import { runCommand } from "../utils/command";
-import {basename, resolve, join} from 'path'
+import { basename, join } from "path";
+
 const location = `${homedir()}/.ssh`;
-const tempDirLocation = tmpdir();
-const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
 
 export default async function backupCommand(options?: { passphrase?: string }) {
     let passphrase = options?.passphrase;
     if (!passphrase) {
-        const encryptionKey = await promptUser([{id:'passphrase', message:'Enter a passphrase for the key'}]);
+        const encryptionKey = await promptUser([{ id: "passphrase", message: "Enter a passphrase for encryption (leave blank to skip):" }]);
         passphrase = encryptionKey.passphrase;
     }
-    
-    const backupTerms = ['id', 'config', 'known_hosts', 'authorized_keys', '.pem', '.pub']
+
+    // Create temp directory inside function, not at module load
+    const tempDirLocation = tmpdir();
+    const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
+
+    const backupTerms = ["id", "config", "known_hosts", "authorized_keys", ".pem", ".pub"];
     logger.start(`Reading SSH directory: ${location}`);
     const items = await readdir(location, { withFileTypes: true });
     const files = items
@@ -29,7 +32,7 @@ export default async function backupCommand(options?: { passphrase?: string }) {
         return;
     }
 
-    logger.succeed(`Found files to backup: ${files.join(', ')}`);
+    logger.succeed(`Found files to backup: ${files.join(", ")}`);
     const filesWithPath = files.map((file) => `${location}/${file}`);
 
     for (const singleFileWithPath of filesWithPath) {
@@ -38,12 +41,8 @@ export default async function backupCommand(options?: { passphrase?: string }) {
         await copyFile(singleFileWithPath, destPath);
     }
 
-    const args = [privTempDir, passphrase as string];
-    logger.start(`Running backup script with args: ${args.join(' ')}`);
-
-    const pathToScript = join(process.cwd(), 'scripts', 'commands', 'backup.sh');
-    console.log('current working directory:', process.cwd());
-    logger.start(`Path to backup script: ${pathToScript}`);
+    const pathToScript = join(import.meta.dirname, "../../scripts/commands/backup.sh");
+    const args = [privTempDir, passphrase || ""];
 
     await runCommand(pathToScript, args);
     logger.succeed("Backup process completed.");

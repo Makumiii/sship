@@ -19,9 +19,8 @@ if [ -z "${EMAIL}" ] || [ "${EMAIL}" = "null" ]; then
     exit 1
 fi
 
-if [ -z "${PASSPHRASE}" ] || [ "${PASSPHRASE}" = "null" ]; then
-    echo "[SSHIP] createKey.sh: Error: 'passphrase' is missing. Exiting."
-    exit 1
+if [ "${PASSPHRASE}" = "null" ]; then
+    PASSPHRASE=""
 fi
 
 if [ -z "${NAME}" ] || [ "${NAME}" = "null" ]; then

@@ -1,9 +1,19 @@
 import { select as selectFromInquirer } from "@inquirer/prompts";
-import type { Tasks } from "../types";
-export async function select<T>(message: string, choices: string[]) {
+
+export type SelectChoice<T> = string | { name: string; value: T };
+
+export async function select<T>(message: string, choices: SelectChoice<T>[]): Promise<T> {
+  const formattedChoices = choices.map((choice) => {
+    if (typeof choice === "string") {
+      return { name: choice, value: choice as unknown as T };
+    }
+    return choice;
+  });
+
   const answer = await selectFromInquirer({
     message: message,
-    choices: choices,
+    choices: formattedChoices,
   });
-  return answer as unknown as T
+  return answer as T;
 }
+
