@@ -9,6 +9,7 @@ import { registerConnectCommand } from "./cli-commands/connect.ts";
 import { registerDoctorCommand } from "./cli-commands/doctor.ts";
 import { registerServersCommand } from "./cli-commands/servers.ts";
 import { registerTransferCommand } from "./cli-commands/transfer.ts";
+import { registerManageProfilesCommand } from "./cli-commands/manageProfiles.ts";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -27,6 +28,7 @@ import doctorCommand from "./commands/doctor.ts";
 import onboardCommand from "./commands/onboard.ts";
 import { serversCommand } from "./commands/servers.ts";
 import { transferCommand } from "./commands/transfer.ts";
+import { manageProfiles } from "./utils/manageProfiles.ts";
 
 const packageJson = JSON.parse(
     readFileSync(join(import.meta.dirname, "../package.json"), "utf-8")
@@ -53,6 +55,7 @@ if (hasArgs) {
     registerDoctorCommand(program);
     registerServersCommand(program);
     registerTransferCommand(program);
+    registerManageProfilesCommand(program);
 
     program.parse(process.argv);
 } else {
@@ -65,6 +68,7 @@ if (hasArgs) {
         { name: "🔗  Connect (SSH Config)", value: "connect" },
         { name: "🖥️   Server Connections (PEM)", value: "servers" },
         { name: "📂  Transfer Files (Synergy)", value: "transfer" },
+        { name: "👤  Manage Profiles", value: "manageProfiles" },
         { name: "🚀  Onboard Keys", value: "onboard" },
         { name: "🩺  Run Doctor", value: "doctor" },
         { name: "🗑️   Uninstall SSHIP", value: "uninstall" },
@@ -114,6 +118,10 @@ if (hasArgs) {
             }
             case "transfer": {
                 await transferCommand();
+                break;
+            }
+            case "manageProfiles": {
+                await manageProfiles();
                 break;
             }
             case "exit": {
