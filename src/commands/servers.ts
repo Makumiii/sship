@@ -1,5 +1,7 @@
 import { input } from "@inquirer/prompts";
-import { existsSync } from "fs";
+import { existsSync, readdirSync } from "fs";
+import { homedir } from "os";
+import { join } from "path";
 import { logger } from "../utils/logger.ts";
 import { select } from "../utils/select.ts";
 import { runCommand } from "../utils/command.ts";
@@ -17,11 +19,65 @@ import {
     updateSshConfig,
 } from "../utils/sshConfig.ts";
 import type { ServerConfig } from "../types/serverTypes.ts";
+import { transferCommand } from "./transfer.ts";
 
-type ServerAction = "add" | "list" | "connect" | "edit" | "delete" | "test" | "back";
+type ServerAction = "add" | "list" | "connect" | "transfer" | "edit" | "delete" | "test" | "back";
+
+function getExistingPemFiles(): string[] {
+    const sshDir = join(homedir(), ".ssh");
+    if (!existsSync(sshDir)) {
+        return [];
+    }
+    try {
+        const files = readdirSync(sshDir);
+        return files.filter((f) => f.endsWith(".pem"));
+    } catch {
+        return [];
+    }
+}
 
 async function addServerFlow(): Promise<void> {
     logger.info("Add a new server");
+
+    // Check for existing PEM files
+    const existingPems = getExistingPemFiles();
+    let pemPath: string;
+    let needsCopy = false;
+
+    if (existingPems.length > 0) {
+        const pemChoices = [
+            ...existingPems.map((p) => ({ name: `📄 ${p}`, value: p })),
+            { name: "📁 Specify custom path...", value: "__custom__" },
+        ];
+
+        const pemChoice = await select<string>("Select PEM key:", pemChoices);
+
+        if (pemChoice === "__custom__") {
+            const customPath = await input({ message: "Path to PEM key file:" });
+            if (!customPath.trim()) {
+                logger.fail("PEM key path is required");
+                return;
+            }
+            pemPath = customPath.replace(/^~/, process.env.HOME || "");
+            needsCopy = true;
+        } else {
+            pemPath = join(homedir(), ".ssh", pemChoice);
+            needsCopy = false;
+        }
+    } else {
+        const customPath = await input({ message: "Path to PEM key file:" });
+        if (!customPath.trim()) {
+            logger.fail("PEM key path is required");
+            return;
+        }
+        pemPath = customPath.replace(/^~/, process.env.HOME || "");
+        needsCopy = true;
+    }
+
+    if (!existsSync(pemPath)) {
+        logger.fail(`PEM file not found: ${pemPath}`);
+        return;
+    }
 
     const name = await input({ message: "Server name (alias):" });
     if (!name.trim()) {
@@ -48,30 +104,23 @@ async function addServerFlow(): Promise<void> {
         return;
     }
 
-    const pemPath = await input({ message: "Path to PEM key file:" });
-    if (!pemPath.trim()) {
-        logger.fail("PEM key path is required");
-        return;
-    }
-
-    const expandedPath = pemPath.replace(/^~/, process.env.HOME || "");
-    if (!existsSync(expandedPath)) {
-        logger.fail(`PEM file not found: ${expandedPath}`);
-        return;
-    }
-
     try {
         logger.start("Adding server...");
 
-        // Copy PEM to ~/.ssh/
-        const sshPemPath = await copyPemToSsh(expandedPath, name);
+        let finalPemPath = pemPath;
+
+        // Only copy if user specified external path
+        if (needsCopy) {
+            finalPemPath = await copyPemToSsh(pemPath, name);
+            logger.info(`PEM key copied to: ${finalPemPath}`);
+        }
 
         const server: ServerConfig = {
             name: name.trim(),
             host: host.trim(),
             port,
             user: user.trim(),
-            pemKeyPath: sshPemPath,
+            pemKeyPath: finalPemPath,
             createdAt: new Date().toISOString(),
         };
 
@@ -82,7 +131,6 @@ async function addServerFlow(): Promise<void> {
         await addToSshConfig(server);
 
         logger.succeed(`Server "${name}" added successfully!`);
-        logger.info(`PEM key copied to: ${sshPemPath}`);
         logger.info(`You can also connect via: ssh ${name}`);
     } catch (error) {
         logger.fail(`Failed to add server: ${error}`);
@@ -129,7 +177,8 @@ async function connectServerFlow(): Promise<void> {
         return;
     }
 
-    logger.start(`Connecting to ${server.name}...`);
+    // Stop any spinner before SSH - TTY needs clean terminal
+    logger.succeed(`Connecting to ${server.name}...`);
 
     // Use IdentitiesOnly to avoid SSH agent trying all keys
     await runCommand("ssh", [
@@ -276,6 +325,7 @@ export async function serversCommand(): Promise<void> {
         { name: "➕  Add Server", value: "add" },
         { name: "📋  List Servers", value: "list" },
         { name: "🔗  Connect to Server", value: "connect" },
+        { name: "📂  File Transfer (Web)", value: "transfer" },
         { name: "✏️   Edit Server", value: "edit" },
         { name: "🗑️   Delete Server", value: "delete" },
         { name: "🧪  Test Connection", value: "test" },
@@ -293,6 +343,9 @@ export async function serversCommand(): Promise<void> {
             break;
         case "connect":
             await connectServerFlow();
+            break;
+        case "transfer":
+            await transferCommand();
             break;
         case "edit":
             await editServerFlow();

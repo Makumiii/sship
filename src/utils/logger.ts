@@ -1,4 +1,4 @@
-import ora from 'ora';
+import ora, { type Ora } from 'ora';
 import { homedir } from 'node:os';
 import { appendFile, mkdir, access } from 'node:fs/promises';
 import { constants } from 'node:fs';
@@ -6,7 +6,7 @@ import { constants } from 'node:fs';
 const logDir = `${homedir()}/.sship/logs`;
 const logFilePath = `${logDir}/sship.log`;
 
-let spinner: ora.Ora | null = null;
+let spinner: Ora | null = null;
 
 async function ensureLogDirectoryExists() {
   try {

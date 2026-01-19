@@ -1,0 +1,239 @@
+import { createServer, type IncomingMessage, type ServerResponse } from "http";
+import { readdir, stat, readFile } from "fs/promises";
+import { join, basename } from "path";
+import { spawn } from "child_process";
+import { homedir } from "os";
+import { EventEmitter } from "events";
+import Client from "ssh2-sftp-client";
+import { loadServers, getServer } from "../utils/serverStorage.ts";
+import type { ServerConfig } from "../types/serverTypes.ts";
+
+const PORT = 3847;
+const progressEmitter = new EventEmitter();
+
+// Debug Crash
+import { writeFileSync } from "fs";
+process.on('uncaughtException', (err) => {
+    writeFileSync('/tmp/sship_crash.log', `Uncaught Exception: ${err.message}\n${err.stack}\n`, { flag: 'a' });
+    process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+    writeFileSync('/tmp/sship_crash.log', `Unhandled Rejection: ${String(reason)}\n`, { flag: 'a' });
+});
+
+interface FileInfo {
+    name: string;
+    isDir: boolean;
+    size: number;
+}
+
+
+
+async function listLocalFiles(dirPath: string): Promise<FileInfo[]> {
+    const dir = dirPath || homedir();
+    const files = await readdir(dir, { withFileTypes: true });
+    const results: FileInfo[] = [];
+    for (const file of files) {
+        if (file.name.startsWith(".")) continue;
+        try {
+            const fullPath = join(dir, file.name);
+            const s = await stat(fullPath);
+            results.push({ name: file.name, isDir: file.isDirectory(), size: s.size });
+        } catch { /* skip inaccessible */ }
+    }
+    return results.sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1));
+}
+
+// Keep using SSH for listing as it is faster/simpler to pipe ls -la than traversing SFTP objects for this specific display format
+async function listRemoteFiles(server: ServerConfig, remotePath: string): Promise<{ path: string, files: FileInfo[] }> {
+    return new Promise((resolve) => {
+        // Use ~ explicitly for home directory if path is empty
+        // Note: cd "~" does not expand in bash. cd ~ does.
+        // So we strictly handle the default case separately or ensure no quotes for tilde.
+        const target = remotePath ? `"${remotePath}"` : "~";
+        const cmd = `cd ${target} && pwd && ls -la`;
+        const args = ["-i", server.pemKeyPath, "-p", String(server.port), "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", `${server.user}@${server.host}`, cmd];
+        const ssh = spawn("ssh", args);
+        let out = "";
+        ssh.stdout.on("data", d => out += d);
+        ssh.on("close", code => {
+            if (code !== 0) return resolve({ path: remotePath || "/", files: [] });
+
+            const lines = out.split("\n").filter(Boolean);
+            const resolvedPath = lines[0]?.trim() || remotePath;
+            const fileLines = lines.slice(2);
+
+            const files: FileInfo[] = [];
+            for (const l of fileLines) {
+                const p = l.trim().split(/\s+/);
+                if (p.length < 9 || !p[0]) continue;
+                const name = p.slice(8).join(" ");
+                if (name === "." || name === ".." || name.startsWith(".")) continue;
+                files.push({ name, isDir: p[0].startsWith("d"), size: parseInt(p[4] || "0", 10) });
+            }
+            resolve({
+                path: resolvedPath,
+                files: files.sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1))
+            });
+        });
+    });
+}
+
+// New SFTP-based transfer with progress streaming
+async function transferFile(req: IncomingMessage, server: ServerConfig, localPath: string, remotePath: string, direction: "upload" | "download"): Promise<void> {
+    const sftp = new Client();
+    let canceled = false;
+
+    try {
+        await sftp.connect({
+            host: server.host,
+            port: server.port,
+            username: server.user,
+            privateKey: await readFile(server.pemKeyPath),
+            readyTimeout: 20000
+        });
+
+        // Handle cancellation from HTTP request closing
+        const onReqClose = () => {
+            canceled = true;
+            sftp.end();
+        };
+        req.on("close", onReqClose);
+
+        const step = (total_transferred: number, chunk: number, total: number) => {
+            if (canceled) return;
+            // Emit progress event
+            const percent = Math.round((total_transferred / total) * 100);
+            progressEmitter.emit("progress", { percent, type: direction, file: remotePath, bytes: total_transferred, total });
+        };
+
+        if (direction === "upload") {
+            // fastPut requires full destination path, not just directory
+            const fileName = basename(localPath);
+            // Assume remote is compatible with forward slashes (standard SFTP)
+            const finalRemotePath = remotePath.endsWith('/') ? `${remotePath}${fileName}` : `${remotePath}/${fileName}`;
+            await sftp.fastPut(localPath, finalRemotePath, { step });
+        } else {
+            // fastGet requires full destination path
+            const fileName = basename(remotePath);
+            const finalLocalPath = join(localPath, fileName);
+            await sftp.fastGet(remotePath, finalLocalPath, { step });
+        }
+
+        req.off("close", onReqClose);
+    } catch (err) {
+        if (canceled) throw new Error("Transfer canceled by user");
+        throw err;
+    } finally {
+        await sftp.end();
+    }
+}
+
+async function handleRequest(req: IncomingMessage, res: ServerResponse) {
+    const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+    const path = url.pathname;
+
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
+
+    try {
+        // SSE Endpoint
+        if (path === "/api/progress") {
+            res.writeHead(200, {
+                "Content-Type": "text/event-stream",
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive"
+            });
+
+            const listener = (data: any) => {
+                res.write(`data: ${JSON.stringify(data)}\n\n`);
+            };
+            progressEmitter.on("progress", listener);
+
+            // Clean up when client disconnects from SSE
+            req.on("close", () => {
+                progressEmitter.off("progress", listener);
+            });
+            return;
+        }
+
+        // Serve Static Files
+        if (path === "/" || path === "/index.html") {
+            const content = await readFile(join(import.meta.dirname, "public", "index.html"), "utf-8");
+            res.writeHead(200, { "Content-Type": "text/html" });
+            res.end(content);
+            return;
+        }
+
+        if (path === "/style.css") {
+            const content = await readFile(join(import.meta.dirname, "public", "style.css"), "utf-8");
+            res.writeHead(200, { "Content-Type": "text/css" });
+            res.end(content);
+            return;
+        }
+
+        if (path === "/script.js") {
+            const content = await readFile(join(import.meta.dirname, "public", "script.js"), "utf-8");
+            res.writeHead(200, { "Content-Type": "application/javascript" });
+            res.end(content);
+            return;
+        }
+
+        if (path === "/api/servers") {
+            const s = await loadServers();
+            res.end(JSON.stringify({ success: true, data: s }));
+            return;
+        }
+
+        if (path === "/api/local") {
+            const d = url.searchParams.get("path") || homedir();
+            const f = await listLocalFiles(d);
+            res.end(JSON.stringify({ success: true, data: { path: d, files: f } }));
+            return;
+        }
+
+        if (path === "/api/remote") {
+            const sName = url.searchParams.get("server");
+            const rPath = url.searchParams.get("path") || "";
+            const s = await getServer(sName || "");
+            if (!s) return res.end(JSON.stringify({ success: false, error: "Server not found" }));
+
+            const result = await listRemoteFiles(s, rPath);
+            res.end(JSON.stringify({ success: true, data: result }));
+            return;
+        }
+
+        if (path === "/api/transfer" && req.method === "POST") {
+            let b = ""; req.on("data", c => b += c);
+            req.on("end", async () => {
+                try {
+                    const body = JSON.parse(b);
+                    const s = await getServer(body.server);
+                    if (s) {
+                        await transferFile(req, s, body.localPath, body.remotePath, body.direction);
+                        res.end(JSON.stringify({ success: true }));
+                    } else {
+                        res.end(JSON.stringify({ success: false, error: "Server not found" }));
+                    }
+                } catch (e) {
+                    res.end(JSON.stringify({ success: false, error: String(e) }));
+                }
+            });
+            return;
+        }
+
+        res.writeHead(404); res.end();
+    } catch (e) {
+        res.writeHead(500); res.end(JSON.stringify({ success: false, error: String(e) }));
+    }
+}
+
+export function startTransferServer(): Promise<void> {
+    return new Promise(resolve => {
+        createServer(handleRequest).listen(PORT, () => resolve());
+    });
+}
+export { PORT };

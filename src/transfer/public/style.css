@@ -1,0 +1,396 @@
+    :root {
+      --bg-color: #1e1e1e;
+      --bg-secondary: #252525;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.55);
+      --accent-blue: #0A84FF;
+      --accent-green: #30D158;
+      --danger: #FF453A;
+      --glass-bg: rgba(30, 30, 30, 0.7);
+      --selection-bg: rgba(10, 132, 255, 0.4);
+      --radius: 12px;
+      --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-stack);
+      background: var(--bg-color);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    /* Glassmorphism Header */
+    header {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .server-select {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    select {
+      appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+      border: 1px solid transparent;
+      padding: 6px 32px 6px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='rgba(255,255,255,0.5)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      transition: all 0.2s;
+    }
+
+    select:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Fix for dropdown options dark mode */
+    select option {
+      background-color: #1e1e1e;
+      color: #ffffff;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      padding: 16px;
+      gap: 16px;
+      overflow: hidden;
+    }
+
+    /* Panes - Finder Style */
+    .pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-secondary);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      position: relative;
+    }
+
+    /* Active State Glow */
+    .pane:not(.inactive) {
+      border-color: rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .pane.inactive {
+      opacity: 0.6;
+      filter: grayscale(0.2);
+      transform: scale(0.995);
+    }
+
+    .pane.drag-over {
+      background: rgba(10, 132, 255, 0.1);
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px var(--accent-blue);
+    }
+
+    .pane-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(255, 255, 255, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .pane-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+    }
+
+    .breadcrumb {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      /* Keep paths mono */
+      font-size: 12px;
+      color: var(--text-primary);
+      opacity: 0.9;
+      cursor: pointer;
+      word-break: break-all;
+      transition: opacity 0.2s;
+    }
+
+    .breadcrumb:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    .file-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    /* Scrollbar */
+    .file-list::-webkit-scrollbar {
+      width: 10px;
+    }
+
+    .file-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .file-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      border: 3px solid var(--bg-secondary);
+    }
+
+    .file-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+      gap: 10px;
+      font-size: 13px;
+      border-radius: 6px;
+      color: var(--text-primary);
+      transition: background 0.15s;
+    }
+
+    .file-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .file-item.selected {
+      background: var(--selection-bg);
+      color: white;
+    }
+
+    .file-icon {
+      font-size: 16px;
+      opacity: 0.9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+    }
+
+    .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 400;
+    }
+
+    /* Footer / Action Area */
+    .footer {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-color);
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .transfer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Smart Pill Button */
+    #actionBtn {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 12px 32px;
+      border-radius: 8px;
+      /* Slightly less round, more "App" like */
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      cursor: not-allowed;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      width: auto;
+      min-width: 200px;
+      justify-content: center;
+      box-shadow: none;
+    }
+
+    #actionBtn.upload {
+      background: var(--accent-green);
+      color: white;
+      border-color: transparent;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(48, 209, 88, 0.25);
+    }
+
+    #actionBtn.upload:hover {
+      background: #3ce065;
+      transform: translateY(-1px);
+    }
+
+    #actionBtn.download {
+      background: var(--accent-blue);
+      color: white;
+      border-color: transparent;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(10, 132, 255, 0.25);
+    }
+
+    #actionBtn.download:hover {
+      background: #2a95ff;
+      transform: translateY(-1px);
+    }
+
+    #actionBtn:active {
+      transform: translateY(0);
+      opacity: 0.95;
+    }
+
+    /* Cancel Button */
+    .cancel-btn {
+      background: rgba(255, 69, 58, 0.1);
+      border: 1px solid rgba(255, 69, 58, 0.2);
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 6px;
+      transition: all 0.2s;
+      display: none;
+      /* Toggled by JS */
+    }
+
+    .cancel-btn:hover {
+      background: rgba(255, 69, 58, 0.2);
+      border-color: rgba(255, 69, 58, 0.4);
+    }
+
+    /* Progress & Status */
+    .progress-container {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      overflow: hidden;
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--accent-blue);
+      /* Solid color, no gradient */
+      width: 0%;
+      transition: width 0.15s ease-out;
+      box-shadow: none;
+    }
+
+    .status-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 24px;
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .status-text.success {
+      color: var(--accent-green);
+    }
+
+    .status-text.error {
+      color: var(--danger);
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top: 2px solid var(--text-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* Responsive Mobile */
+    @media (max-width: 768px) {
+      .main {
+        flex-direction: column;
+      }
+
+      .pane {
+        min-height: 300px;
+      }
+    }

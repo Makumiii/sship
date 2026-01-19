@@ -7,10 +7,11 @@
     "sship": "./dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target=node"
+    "build": "bun build src/index.ts --outdir dist --target=node --external ssh2 --external ssh2-sftp-client && mkdir -p dist/public && cp src/transfer/public/* dist/public/"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/ssh2-sftp-client": "^9.0.6",
     "prettier": "^3.6.2"
   },
   "peerDependencies": {
@@ -21,7 +22,8 @@
     "@inquirer/prompts": "^7.6.0",
     "@types/commander": "^2.12.5",
     "commander": "^14.0.0",
-    "ora": "^8.2.0"
+    "ora": "^8.2.0",
+    "ssh2-sftp-client": "^12.0.1"
   },
   "os": [
     "linux",
