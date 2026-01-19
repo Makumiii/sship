@@ -1,10 +1,10 @@
 {
   "name": "sship",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "private": false,
   "bin": {
-    "sship": "./dist/index.js"
+    "sship": "dist/index.js"
   },
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target=node --external ssh2 --external ssh2-sftp-client && mkdir -p dist/public && cp src/transfer/public/* dist/public/"

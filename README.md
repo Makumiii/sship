@@ -1,6 +1,6 @@
 # SSHIP 🚀
 
-![SSHIP Screenshot](assets/sship-logo.png)
+![SSHIP Screenshot](https://raw.githubusercontent.com/Makumiii/sship/main/assets/sship-logo.png)
 
 **SSHIP** is the ultimate SSH companion tool. It simplifies your SSH key management and introduces **Synergy**, a beautiful, modern file transfer interface directly in your browser.
 
