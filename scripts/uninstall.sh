@@ -8,6 +8,9 @@ echo "Uninstalling SSHIP..."
 
 rm -rf "$SSHIP_INSTALL_DIR"
 rm -f "$SSHIP_SYMLINK"
-rm -f "$HOME/.sship/profiles.json"
+rm -rf "$HOME/.sship"
+
+# Also remove npm global installation if it exists
+npm uninstall -g sship 2>/dev/null || true
 
 echo "SSHIP uninstalled successfully."
