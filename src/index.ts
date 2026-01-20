@@ -88,7 +88,7 @@ if (hasArgs) {
                 break;
             }
             case "list": {
-                listKeysCommand();
+                await listKeysCommand();
                 break;
             }
             case "backup": {
