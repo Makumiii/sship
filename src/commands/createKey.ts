@@ -3,6 +3,7 @@ import { promptUser } from "../utils/prompt.ts";
 import type { UserPromptMessage } from "../types.ts";
 import { spawn } from "child_process";
 import { resolve, join } from "path";
+import { addServiceKey } from "../utils/serviceKeys.ts";
 
 const promptMessages: UserPromptMessage[] = [
   {
@@ -64,6 +65,9 @@ export default async function createKeyCommand(options?: { email?: string; passp
   });
   if (exitCode === 0) {
     logger.succeed("SSH key creation complete.");
+    if (typeof responses.name === "string" && responses.name.trim() !== "") {
+      await addServiceKey(responses.name.trim());
+    }
   } else {
     logger.fail("SSH key creation failed.");
   }

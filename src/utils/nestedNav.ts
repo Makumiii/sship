@@ -6,6 +6,6 @@ export async function nestedNav<T extends string>(
 ): Promise<T> {
     return await select<T>(message, [
         ...choices,
-        { name: "⬅️  Go Back", value: "back" as T }
+        { name: "Go Back", value: "back" as T }
     ]);
 }

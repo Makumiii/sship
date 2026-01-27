@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
-import { readdir, stat, readFile } from "fs/promises";
+import { mkdir, readdir, stat, readFile } from "fs/promises";
 import { join, basename } from "path";
 import { spawn } from "child_process";
 import { homedir } from "os";
@@ -80,7 +80,7 @@ async function listRemoteFiles(server: ServerConfig, remotePath: string): Promis
 }
 
 // New SFTP-based transfer with progress streaming
-async function transferFile(req: IncomingMessage, server: ServerConfig, localPath: string, remotePath: string, direction: "upload" | "download"): Promise<void> {
+export async function transferFile(req: IncomingMessage, server: ServerConfig, localPath: string, remotePath: string, direction: "upload" | "download"): Promise<void> {
     const sftp = new Client();
     let canceled = false;
 
@@ -100,24 +100,90 @@ async function transferFile(req: IncomingMessage, server: ServerConfig, localPat
         };
         req.on("close", onReqClose);
 
-        const step = (total_transferred: number, chunk: number, total: number) => {
+        const reportProgress = (filePath: string) => (total_transferred: number, chunk: number, total: number) => {
             if (canceled) return;
             // Emit progress event
             const percent = Math.round((total_transferred / total) * 100);
-            progressEmitter.emit("progress", { percent, type: direction, file: remotePath, bytes: total_transferred, total });
+            progressEmitter.emit("progress", { percent, type: direction, file: filePath, bytes: total_transferred, total });
+        };
+
+        const ensureRemoteDir = async (path: string) => {
+            try {
+                await sftp.mkdir(path, true);
+            } catch {
+                // Ignore if it already exists or cannot be created
+            }
+        };
+
+        const uploadPath = async (path: string, remoteDir: string) => {
+            const stats = await stat(path);
+            if (stats.isDirectory()) {
+                const dirName = basename(path);
+                const nextRemoteDir = remoteDir.endsWith('/')
+                    ? `${remoteDir}${dirName}`
+                    : `${remoteDir}/${dirName}`;
+                await ensureRemoteDir(nextRemoteDir);
+                const entries = await readdir(path, { withFileTypes: true });
+                for (const entry of entries) {
+                    if (entry.name.startsWith(".")) continue;
+                    const childPath = join(path, entry.name);
+                    if (entry.isDirectory()) {
+                        await uploadPath(childPath, nextRemoteDir);
+                    } else if (entry.isFile()) {
+                        await uploadFile(childPath, nextRemoteDir);
+                    }
+                }
+            } else {
+                if (!stats.isFile()) {
+                    return;
+                }
+                await uploadFile(path, remoteDir);
+            }
+        };
+
+        const uploadFile = async (path: string, remoteDir: string) => {
+            const fileName = basename(path);
+            const finalRemotePath = remoteDir.endsWith('/')
+                ? `${remoteDir}${fileName}`
+                : `${remoteDir}/${fileName}`;
+            await sftp.fastPut(path, finalRemotePath, {
+                step: reportProgress(finalRemotePath),
+            });
+        };
+
+        const downloadPath = async (path: string, localDir: string) => {
+            const stats = await sftp.stat(path);
+            if (stats.isDirectory) {
+                const dirName = basename(path);
+                const nextLocalDir = join(localDir, dirName);
+                await mkdir(nextLocalDir, { recursive: true });
+                const entries = await sftp.list(path);
+                for (const entry of entries) {
+                    if (!entry.name || entry.name.startsWith(".")) continue;
+                    const childPath = `${path.replace(/\/+$/, "")}/${entry.name}`;
+                    if (entry.type === "d") {
+                        await downloadPath(childPath, nextLocalDir);
+                    } else if (entry.type === "-") {
+                        await downloadFile(childPath, nextLocalDir);
+                    }
+                }
+            } else {
+                await downloadFile(path, localDir);
+            }
+        };
+
+        const downloadFile = async (path: string, localDir: string) => {
+            const fileName = basename(path);
+            const finalLocalPath = join(localDir, fileName);
+            await sftp.fastGet(path, finalLocalPath, {
+                step: reportProgress(path),
+            });
         };
 
         if (direction === "upload") {
-            // fastPut requires full destination path, not just directory
-            const fileName = basename(localPath);
-            // Assume remote is compatible with forward slashes (standard SFTP)
-            const finalRemotePath = remotePath.endsWith('/') ? `${remotePath}${fileName}` : `${remotePath}/${fileName}`;
-            await sftp.fastPut(localPath, finalRemotePath, { step });
+            await uploadPath(localPath, remotePath);
         } else {
-            // fastGet requires full destination path
-            const fileName = basename(remotePath);
-            const finalLocalPath = join(localPath, fileName);
-            await sftp.fastGet(remotePath, finalLocalPath, { step });
+            await downloadPath(remotePath, localPath);
         }
 
         req.off("close", onReqClose);

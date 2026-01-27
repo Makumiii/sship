@@ -2,27 +2,26 @@ import { logger } from "../utils/logger.ts";
 import { homedir } from "node:os";
 import { readFileSync, existsSync } from "node:fs";
 import { getAllFiles } from "../utils/getAllFiles.ts";
-import { getKeys } from "../utils/getKeys.ts";
 import { select, type SelectChoice } from "../utils/select.ts";
 import { copyToClipboard } from "../utils/clipboard.ts";
+import { loadServiceKeys } from "../utils/serviceKeys.ts";
 
 const location = homedir();
 const fullLocation = `${location}/.ssh`;
 
-export function getRawKeys() {
-  const files = getAllFiles(fullLocation);
-  return getKeys(files);
-}
-
 export default async function listKeysCommand() {
-  const pairNames = getRawKeys();
+  const storedKeys = await loadServiceKeys();
+  const files = getAllFiles(fullLocation);
+  const pairNames = storedKeys.filter((key) =>
+    files.some((file) => file === key || file === `${key}.pub`)
+  );
 
   if (pairNames.length === 0) {
     logger.info("No keys found");
     return;
   }
 
-  logger.info("List of keys:");
+  logger.info("List of service keys:");
   let i = 1;
   pairNames.forEach((key) => {
     logger.info(`${i}. ${key}`);
@@ -33,10 +32,10 @@ export default async function listKeysCommand() {
   const validKeys = pairNames.filter((key): key is string => key !== undefined);
   const viewChoices: SelectChoice<string>[] = [
     ...validKeys.map((key) => ({
-      name: `🔑  ${key}`,
+      name: key,
       value: key,
     })),
-    { name: "⬅️   Back", value: "__back__" },
+    { name: "Back", value: "__back__" },
   ];
 
   const selectedKey = await select<string>(
@@ -58,17 +57,17 @@ export default async function listKeysCommand() {
 
   const pubKeyContent = readFileSync(pubKeyPath, "utf-8").trim();
 
-  logger.info("\n📋 Public Key:\n");
+  logger.info("\nPublic Key:\n");
   console.log(pubKeyContent);
   console.log("");
 
   // Copy to clipboard
   const copied = copyToClipboard(pubKeyContent);
   if (copied) {
-    logger.succeed("✅ Public key copied to clipboard!");
+    logger.succeed("Public key copied to clipboard.");
   } else {
     logger.warn(
-      "⚠️  Could not copy to clipboard (no clipboard tool found: xclip, xsel, or wl-copy)"
+      "Could not copy to clipboard (no clipboard tool found: xclip, xsel, or wl-copy)"
     );
   }
 }

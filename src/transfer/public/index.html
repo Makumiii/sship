@@ -10,12 +10,19 @@
 
 <body>
   <header>
-    <h1>📂 Synergy File Transfer</h1>
+    <h1>Synergy File Transfer</h1>
     <div class="server-select">
       <label>Server:</label>
       <select id="serverSelect">
         <option value="">-- Select Server --</option>
       </select>
+      <div class="server-actions">
+        <button id="refreshServerBtn" class="refresh-btn" disabled>Refresh</button>
+        <span class="server-status-wrap">
+          <span id="serverStatusDot" class="server-status-dot"></span>
+          <span id="serverStatus" class="server-status"></span>
+        </span>
+      </div>
     </div>
   </header>
 
@@ -23,7 +30,7 @@
     <div class="pane" id="localPane" ondragover="handleDragOver(event, 'local')"
       ondragleave="handleDragLeave(event, 'local')" ondrop="handleDrop(event, 'local')">
       <div class="pane-header">
-        <span class="pane-title">💻 Local Machine</span>
+        <span class="pane-title">Local Machine</span>
         <span class="breadcrumb" id="localPath" onclick="goToLocalParent()"></span>
       </div>
       <div class="file-list" id="localFiles" onclick="clearSelection('local')"></div>
@@ -32,7 +39,7 @@
     <div class="pane" id="remotePane" ondragover="handleDragOver(event, 'remote')"
       ondragleave="handleDragLeave(event, 'remote')" ondrop="handleDrop(event, 'remote')">
       <div class="pane-header">
-        <span class="pane-title">🌐 Remote Server</span>
+        <span class="pane-title">Remote Server</span>
         <span class="breadcrumb" id="remotePath" onclick="goToRemoteParent()"></span>
       </div>
       <div class="file-list" id="remoteFiles" onclick="clearSelection('remote')">
@@ -63,6 +70,7 @@
     </div>
   </div>
 
+  <script src="helpers.js"></script>
   <script src="script.js"></script>
 </body>
 

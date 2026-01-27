@@ -5,6 +5,7 @@ import { getKeys } from "../utils/getKeys.ts";
 import { unlinkSync } from "node:fs";
 import {homedir} from 'node:os'
 import {readFile, writeFile} from 'fs/promises'
+import { loadServiceKeys, removeServiceKey } from "../utils/serviceKeys.ts";
 
 // get files in ssh dir
 const location = homedir()
@@ -47,7 +48,7 @@ function deleteSelectedKey(selectedKey: string, files: string[]) {
 }
 
 export default async function deleteCommand(keyName?: string, yes?: boolean) {
-  const pairNames = getKeys(getAllFiles(fullLocation));
+  const pairNames = await loadServiceKeys();
   if (pairNames.length === 0) {
     logger.info("No keys found to delete");
     return;
@@ -83,8 +84,8 @@ export default async function deleteCommand(keyName?: string, yes?: boolean) {
 
   deleteSelectedKey(selectedKey, getAllFiles(fullLocation));
   await deleteKeyAlias(selectedKey);
+  await removeServiceKey(selectedKey);
   
 }
-
 
 

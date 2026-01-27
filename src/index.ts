@@ -5,11 +5,10 @@ import { registerDeleteCommand } from "./cli-commands/delete.ts";
 import { registerListCommand } from "./cli-commands/list.ts";
 import { registerBackupCommand } from "./cli-commands/backup.ts";
 import { registerUninstallCommand } from "./cli-commands/uninstall.ts";
-import { registerConnectCommand } from "./cli-commands/connect.ts";
 import { registerDoctorCommand } from "./cli-commands/doctor.ts";
 import { registerServersCommand } from "./cli-commands/servers.ts";
 import { registerTransferCommand } from "./cli-commands/transfer.ts";
-import { registerManageProfilesCommand } from "./cli-commands/manageProfiles.ts";
+import { registerTunnelCommand } from "./cli-commands/tunnel.ts";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -17,18 +16,15 @@ import { join } from "path";
 import { logger } from "./utils/logger.ts";
 import { select, type SelectChoice } from "./utils/select.ts";
 import { ExitPromptError } from "@inquirer/core";
-import deleteCommand from "./commands/deleteKey.ts";
 import type { Tasks } from "./types.ts";
-import createKeyCommand from "./commands/createKey.ts";
-import listKeysCommand from "./commands/listKeys.ts";
 import { runCommand } from "./utils/command.ts";
 import backupCommand from "./commands/backup.ts";
-import { connectCommand } from "./commands/connect.ts";
 import doctorCommand from "./commands/doctor.ts";
 import onboardCommand from "./commands/onboard.ts";
 import { serversCommand } from "./commands/servers.ts";
 import { transferCommand } from "./commands/transfer.ts";
-import { manageProfiles } from "./utils/manageProfiles.ts";
+import { tunnelCommand } from "./commands/tunnel.ts";
+import { manageServiceKeys } from "./commands/serviceKeys.ts";
 
 const packageJson = JSON.parse(
     readFileSync(join(import.meta.dirname, "../package.json"), "utf-8")
@@ -51,44 +47,32 @@ if (hasArgs) {
     registerListCommand(program);
     registerBackupCommand(program);
     registerUninstallCommand(program);
-    registerConnectCommand(program);
     registerDoctorCommand(program);
     registerServersCommand(program);
     registerTransferCommand(program);
-    registerManageProfilesCommand(program);
+    registerTunnelCommand(program);
 
     program.parse(process.argv);
 } else {
     // Interactive mode - show menu
     const menuChoices: SelectChoice<Tasks>[] = [
-        { name: "🔑  Create SSH Key", value: "create" },
-        { name: "🗑️   Delete SSH Key", value: "delete" },
-        { name: "📋  List SSH Keys", value: "list" },
-        { name: "💾  Backup Keys", value: "backup" },
-        { name: "🔗  Connect (SSH Config)", value: "connect" },
-        { name: "🖥️   Server Connections (PEM)", value: "servers" },
-        { name: "📂  Transfer Files (Synergy)", value: "transfer" },
-        { name: "👤  Manage Profiles", value: "manageProfiles" },
-        { name: "🚀  Onboard Keys", value: "onboard" },
-        { name: "🩺  Run Doctor", value: "doctor" },
-        { name: "🗑️   Uninstall SSHIP", value: "uninstall" },
-        { name: "🚪  Exit", value: "exit" },
+        { name: "Service Keys", value: "serviceKeys" },
+        { name: "Server Connections (PEM)", value: "servers" },
+        { name: "Transfer Files (Synergy)", value: "transfer" },
+        { name: "Tunnel Manager", value: "tunnel" },
+        { name: "Onboard Keys", value: "onboard" },
+        { name: "Run Doctor", value: "doctor" },
+        { name: "Backup Keys", value: "backup" },
+        { name: "Uninstall SSHIP", value: "uninstall" },
+        { name: "Exit", value: "exit" },
     ];
 
     try {
         const chosenTask = await select<Tasks>("What do you want to do?", menuChoices);
 
         switch (chosenTask) {
-            case "create": {
-                await createKeyCommand();
-                break;
-            }
-            case "delete": {
-                await deleteCommand();
-                break;
-            }
-            case "list": {
-                await listKeysCommand();
+            case "serviceKeys": {
+                await manageServiceKeys();
                 break;
             }
             case "backup": {
@@ -98,10 +82,6 @@ if (hasArgs) {
             case "uninstall": {
                 const uninstallPath = join(import.meta.dirname, "../scripts/uninstall.sh");
                 await runCommand(uninstallPath);
-                break;
-            }
-            case "connect": {
-                await connectCommand();
                 break;
             }
             case "doctor": {
@@ -120,12 +100,12 @@ if (hasArgs) {
                 await transferCommand();
                 break;
             }
-            case "manageProfiles": {
-                await manageProfiles();
+            case "tunnel": {
+                await tunnelCommand();
                 break;
             }
             case "exit": {
-                logger.info("Goodbye! 👋");
+                logger.info("Goodbye!");
                 process.exit(0);
             }
         }

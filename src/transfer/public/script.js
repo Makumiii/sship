@@ -3,6 +3,7 @@ let currentRemotePath = ''; // Empty string defaults to home dir on backend
 let selectedServer = null;
 let selectedLocalFiles = [];
 let selectedRemoteFiles = [];
+const helpers = globalThis.SynergyHelpers || {};
 
 // Tracking for range selection
 let lastSelectedLocalIdx = -1;
@@ -26,10 +27,8 @@ function initProgressStream() {
         const data = JSON.parse(event.data);
         if (data.percent !== undefined) {
             // Show file name if provided, or generic "Processing"
-            if (data.file) {
-                // Truncate file name if too long
-                const fName = data.file.split('/').pop();
-                showStatus(`${data.type === 'upload' ? 'Uploading' : 'Downloading'}: ${fName} (${data.percent}%)`);
+            if (data.file && helpers.formatTransferStatus) {
+                showStatus(helpers.formatTransferStatus(data.type, data.file, data.percent));
             }
             setProgress(data.percent);
         }
@@ -52,7 +51,8 @@ async function loadServers() {
             data.data.forEach(server => {
                 const option = document.createElement('option');
                 option.value = server.name;
-                option.textContent = server.name + ' (' + server.user + '@' + server.host + ')';
+                option.textContent = server.name;
+                option.title = server.user + '@' + server.host;
                 select.appendChild(option);
             });
         }
@@ -97,15 +97,20 @@ async function loadRemoteFiles(path) {
             selectedRemoteFiles = [];
             lastSelectedRemoteIdx = -1;
             updateState();
+            setConnectionState('success', 'Connected to ' + selectedServer);
         } else {
             showStatus(data.error, 'error');
+            setConnectionState('error', 'Connection failed');
         }
     } catch (err) {
         showStatus('Remote list error', 'error');
+        setConnectionState('error', 'Connection failed');
     }
 }
 
 function renderFiles(container, files, type) {
+    const folderIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a4 4 0 0 1-4 4H5a2 2 0 0 1-2-2V6z"/></svg>';
+    const fileIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2h8l4 4v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V7h3.5L14 3.5z"/></svg>';
     container.innerHTML = '';
     if (!files || files.length === 0) {
         container.innerHTML = '<div style="padding: 10px; color: #8b949e; font-size: 12px;">Empty directory</div>';
@@ -115,26 +120,27 @@ function renderFiles(container, files, type) {
     files.forEach((file, index) => {
         const div = document.createElement('div');
         div.className = 'file-item';
-        div.setAttribute('draggable', !file.isDir);
+        div.setAttribute('draggable', true);
         div.dataset.index = index;
-        div.innerHTML = '<span class="file-icon">' + (file.isDir ? '📁' : '📄') + '</span>' +
+        div.innerHTML = '<span class="file-icon">' + (file.isDir ? folderIcon : fileIcon) + '</span>' +
             '<span class="file-name">' + file.name + '</span>';
 
         div.onclick = (e) => {
             e.stopPropagation();
-            if (file.isDir) {
-                const next = type === 'local' ? currentLocalPath + '/' + file.name : (currentRemotePath + '/' + file.name).replace(/\/+/g, '/');
-                type === 'local' ? loadLocalFiles(next) : loadRemoteFiles(next);
-            } else {
-                handleSelection(type, index, e.shiftKey, e.ctrlKey || e.metaKey);
-            }
+            handleSelection(type, index, e.shiftKey, e.ctrlKey || e.metaKey);
+        };
+
+        div.ondblclick = (e) => {
+            if (!file.isDir) return;
+            const next = type === 'local'
+                ? currentLocalPath + '/' + file.name
+                : (helpers.joinRemotePath
+                    ? helpers.joinRemotePath(currentRemotePath, file.name)
+                    : (currentRemotePath + '/' + file.name).replace(/\/+/g, '/'));
+            type === 'local' ? loadLocalFiles(next) : loadRemoteFiles(next);
         };
 
         div.ondragstart = (e) => {
-            if (file.isDir) {
-                e.preventDefault();
-                return;
-            }
             // Ensure the dragged file is selected if it wasn't
             const currentList = type === 'local' ? selectedLocalFiles : selectedRemoteFiles;
             if (!currentList.includes(file.name)) {
@@ -177,7 +183,7 @@ function handleSelection(type, index, isShift, isCtrl) {
         if (!isCtrl) selectedList.length = 0;
 
         for (let i = start; i <= end; i++) {
-            if (!files[i].isDir && !selectedList.includes(files[i].name)) {
+            if (!selectedList.includes(files[i].name)) {
                 selectedList.push(files[i].name);
             }
         }
@@ -388,13 +394,13 @@ async function uploadFiles() {
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Upload failed');
         }
-        showStatus('✓ Successfully uploaded ' + total + ' files', 'success');
+        showStatus('Successfully uploaded ' + total + ' files', 'success');
         setTimeout(() => loadRemoteFiles(currentRemotePath), 500);
     } catch (err) {
         if (err.name === 'AbortError' || err.message === 'Canceled') {
-            showStatus('🚫 Transfer canceled', 'error');
+            showStatus('Transfer canceled', 'error');
         } else {
-            showStatus('✗ Error: ' + err.message, 'error');
+            showStatus('Error: ' + err.message, 'error');
         }
     } finally {
         closeProgressStream();
@@ -434,13 +440,13 @@ async function downloadFiles() {
             const data = await res.json();
             if (!data.success) throw new Error(data.error || 'Download failed');
         }
-        showStatus('✓ Successfully downloaded ' + total + ' files', 'success');
+        showStatus('Successfully downloaded ' + total + ' files', 'success');
         setTimeout(() => loadLocalFiles(currentLocalPath), 500);
     } catch (err) {
         if (err.name === 'AbortError' || err.message === 'Canceled') {
-            showStatus('🚫 Transfer canceled', 'error');
+            showStatus('Transfer canceled', 'error');
         } else {
-            showStatus('✗ Error: ' + err.message, 'error');
+            showStatus('Error: ' + err.message, 'error');
         }
     } finally {
         closeProgressStream();
@@ -462,12 +468,52 @@ function goToRemoteParent() {
 document.getElementById('serverSelect').addEventListener('change', e => {
     selectedServer = e.target.value;
     if (selectedServer) {
-        loadRemoteFiles(''); // Changed to empty string for home dir default
+        connectToServer();
     } else {
         document.getElementById('remoteFiles').innerHTML = '<div style="padding: 20px; color: #8b949e;">Select a server to browse</div>';
         document.getElementById('remotePath').textContent = '';
+        setConnectionState('idle', '');
     }
     updateState();
 });
+
+document.getElementById('refreshServerBtn').addEventListener('click', () => {
+    if (!selectedServer) return;
+    connectToServer(true);
+});
+
+function connectToServer(isRefresh = false) {
+    const remoteList = document.getElementById('remoteFiles');
+    const state = helpers.getConnectionState
+        ? helpers.getConnectionState(isRefresh)
+        : {
+            panelText: isRefresh ? 'Refreshing connection...' : 'Connecting to server...',
+            statusText: isRefresh ? 'Refreshing...' : 'Connecting...',
+        };
+    remoteList.innerHTML = '<div style="padding: 20px; color: #8b949e;">' +
+        state.panelText +
+        '</div>';
+    setConnectionState('loading', state.statusText);
+    const targetPath = currentRemotePath || '';
+    loadRemoteFiles(targetPath);
+}
+
+function setConnectionState(state, message) {
+    const serverSelect = document.getElementById('serverSelect');
+    const refreshBtn = document.getElementById('refreshServerBtn');
+    const status = document.getElementById('serverStatus');
+    const dot = document.getElementById('serverStatusDot');
+
+    const isLoading = state === 'loading';
+    serverSelect.disabled = isLoading;
+    refreshBtn.disabled = isLoading || !selectedServer;
+    status.textContent = message || '';
+    status.classList.toggle('loading', isLoading);
+
+    dot.classList.remove('loading', 'success', 'error');
+    if (state === 'loading') dot.classList.add('loading');
+    if (state === 'success') dot.classList.add('success');
+    if (state === 'error') dot.classList.add('error');
+}
 
 init();

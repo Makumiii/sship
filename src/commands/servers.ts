@@ -19,9 +19,9 @@ import {
     updateSshConfig,
 } from "../utils/sshConfig.ts";
 import type { ServerConfig } from "../types/serverTypes.ts";
-import { transferCommand } from "./transfer.ts";
+import type { SelectChoice } from "../utils/select.ts";
 
-type ServerAction = "add" | "list" | "connect" | "transfer" | "edit" | "delete" | "test" | "back";
+type ServerAction = "add" | "manage" | "back";
 
 function getExistingPemFiles(): string[] {
     const sshDir = join(homedir(), ".ssh");
@@ -46,8 +46,8 @@ async function addServerFlow(): Promise<void> {
 
     if (existingPems.length > 0) {
         const pemChoices = [
-            ...existingPems.map((p) => ({ name: `📄 ${p}`, value: p })),
-            { name: "📁 Specify custom path...", value: "__custom__" },
+            ...existingPems.map((p) => ({ name: p, value: p })),
+            { name: "Specify custom path...", value: "__custom__" },
         ];
 
         const pemChoice = await select<string>("Select PEM key:", pemChoices);
@@ -145,22 +145,76 @@ async function listServersFlow(): Promise<void> {
         return;
     }
 
-    logger.info("\n📋 Configured Servers:\n");
-    console.log("─".repeat(70));
+    logger.info("\nConfigured Servers:\n");
+    console.log("-".repeat(70));
     console.log(
         `${"NAME".padEnd(15)} ${"HOST".padEnd(20)} ${"PORT".padEnd(6)} ${"USER".padEnd(15)}`
     );
-    console.log("─".repeat(70));
+    console.log("-".repeat(70));
 
     for (const server of servers) {
         console.log(
             `${server.name.padEnd(15)} ${server.host.padEnd(20)} ${String(server.port).padEnd(6)} ${server.user.padEnd(15)}`
         );
     }
-    console.log("─".repeat(70));
+    console.log("-".repeat(70));
 }
 
-async function connectServerFlow(): Promise<void> {
+async function manageServersFlow(): Promise<void> {
+    const servers = await loadServers();
+
+    if (servers.length === 0) {
+        logger.info("No servers configured. Use 'Add Server' to add one.");
+        return;
+    }
+
+    await listServersFlow();
+
+    const serverChoices = [
+        ...servers.map((server) => ({
+            name: `${server.name} (${server.user}@${server.host}:${server.port})`,
+            value: server.name,
+        })),
+        { name: "Back", value: "__back__" },
+    ];
+
+    const selectedName = await select<string>("Select a server:", serverChoices);
+    if (!selectedName || selectedName === "__back__") return;
+
+    const server = await getServer(selectedName);
+    if (!server) {
+        logger.fail(`Server "${selectedName}" not found`);
+        return;
+    }
+
+    const actionChoices: SelectChoice<string>[] = [
+        { name: "Connect", value: "connect" },
+        { name: "Test Connection", value: "test" },
+        { name: "Edit", value: "edit" },
+        { name: "Delete", value: "delete" },
+        { name: "Back", value: "back" },
+    ];
+
+    const action = await select<string>(`Action for "${server.name}":`, actionChoices);
+    if (!action || action === "back") return;
+
+    switch (action) {
+        case "connect":
+            await connectServerFlow(server.name);
+            break;
+        case "test":
+            await testConnectionFlow(server.name);
+            break;
+        case "edit":
+            await editServerFlow(server.name);
+            break;
+        case "delete":
+            await deleteServerFlow(server.name);
+            break;
+    }
+}
+
+async function connectServerFlow(selectedName?: string): Promise<void> {
     const servers = await loadServers();
 
     if (servers.length === 0) {
@@ -168,12 +222,15 @@ async function connectServerFlow(): Promise<void> {
         return;
     }
 
-    const serverNames = servers.map((s) => s.name);
-    const selectedName = await select<string>("Select server to connect:", serverNames);
+    let resolvedName = selectedName;
+    if (!resolvedName) {
+        const serverNames = servers.map((s) => s.name);
+        resolvedName = await select<string>("Select server to connect:", serverNames);
+    }
 
-    const server = await getServer(selectedName);
+    const server = resolvedName ? await getServer(resolvedName) : null;
     if (!server) {
-        logger.fail(`Server "${selectedName}" not found`);
+        logger.fail(`Server "${resolvedName}" not found`);
         return;
     }
 
@@ -189,7 +246,7 @@ async function connectServerFlow(): Promise<void> {
     ]);
 }
 
-async function editServerFlow(): Promise<void> {
+async function editServerFlow(selectedName?: string): Promise<void> {
     const servers = await loadServers();
 
     if (servers.length === 0) {
@@ -197,12 +254,15 @@ async function editServerFlow(): Promise<void> {
         return;
     }
 
-    const serverNames = servers.map((s) => s.name);
-    const selectedName = await select<string>("Select server to edit:", serverNames);
+    let resolvedName = selectedName;
+    if (!resolvedName) {
+        const serverNames = servers.map((s) => s.name);
+        resolvedName = await select<string>("Select server to edit:", serverNames);
+    }
 
-    const server = await getServer(selectedName);
+    const server = resolvedName ? await getServer(resolvedName) : null;
     if (!server) {
-        logger.fail(`Server "${selectedName}" not found`);
+        logger.fail(`Server "${resolvedName}" not found`);
         return;
     }
 
@@ -252,7 +312,7 @@ async function editServerFlow(): Promise<void> {
     }
 }
 
-async function deleteServerFlow(): Promise<void> {
+async function deleteServerFlow(selectedName?: string): Promise<void> {
     const servers = await loadServers();
 
     if (servers.length === 0) {
@@ -260,11 +320,14 @@ async function deleteServerFlow(): Promise<void> {
         return;
     }
 
-    const serverNames = servers.map((s) => s.name);
-    const selectedName = await select<string>("Select server to delete:", serverNames);
+    let resolvedName = selectedName;
+    if (!resolvedName) {
+        const serverNames = servers.map((s) => s.name);
+        resolvedName = await select<string>("Select server to delete:", serverNames);
+    }
 
     const confirm = await select<"Yes" | "No">(
-        `Delete server "${selectedName}"?`,
+        `Delete server "${resolvedName}"?`,
         ["Yes", "No"]
     );
 
@@ -275,15 +338,19 @@ async function deleteServerFlow(): Promise<void> {
 
     try {
         logger.start("Deleting server...");
-        await deleteServer(selectedName);
-        await removeFromSshConfig(selectedName);
-        logger.succeed(`Server "${selectedName}" deleted successfully!`);
+        if (!resolvedName) {
+            logger.fail("No server selected.");
+            return;
+        }
+        await deleteServer(resolvedName);
+        await removeFromSshConfig(resolvedName);
+        logger.succeed(`Server "${resolvedName}" deleted successfully!`);
     } catch (error) {
         logger.fail(`Failed to delete server: ${error}`);
     }
 }
 
-async function testConnectionFlow(): Promise<void> {
+async function testConnectionFlow(selectedName?: string): Promise<void> {
     const servers = await loadServers();
 
     if (servers.length === 0) {
@@ -291,12 +358,15 @@ async function testConnectionFlow(): Promise<void> {
         return;
     }
 
-    const serverNames = servers.map((s) => s.name);
-    const selectedName = await select<string>("Select server to test:", serverNames);
+    let resolvedName = selectedName;
+    if (!resolvedName) {
+        const serverNames = servers.map((s) => s.name);
+        resolvedName = await select<string>("Select server to test:", serverNames);
+    }
 
-    const server = await getServer(selectedName);
+    const server = resolvedName ? await getServer(resolvedName) : null;
     if (!server) {
-        logger.fail(`Server "${selectedName}" not found`);
+        logger.fail(`Server "${resolvedName}" not found`);
         return;
     }
 
@@ -318,18 +388,11 @@ async function testConnectionFlow(): Promise<void> {
     }
 }
 
-import type { SelectChoice } from "../utils/select.ts";
-
 export async function serversCommand(): Promise<void> {
     const menuChoices: SelectChoice<ServerAction>[] = [
-        { name: "➕  Add Server", value: "add" },
-        { name: "📋  List Servers", value: "list" },
-        { name: "🔗  Connect to Server", value: "connect" },
-        { name: "📂  File Transfer (Web)", value: "transfer" },
-        { name: "✏️   Edit Server", value: "edit" },
-        { name: "🗑️   Delete Server", value: "delete" },
-        { name: "🧪  Test Connection", value: "test" },
-        { name: "⬅️   Back", value: "back" },
+        { name: "Add Server", value: "add" },
+        { name: "Manage Servers", value: "manage" },
+        { name: "Back", value: "back" },
     ];
 
     const action = await select<ServerAction>("Server Management:", menuChoices);
@@ -338,23 +401,8 @@ export async function serversCommand(): Promise<void> {
         case "add":
             await addServerFlow();
             break;
-        case "list":
-            await listServersFlow();
-            break;
-        case "connect":
-            await connectServerFlow();
-            break;
-        case "transfer":
-            await transferCommand();
-            break;
-        case "edit":
-            await editServerFlow();
-            break;
-        case "delete":
-            await deleteServerFlow();
-            break;
-        case "test":
-            await testConnectionFlow();
+        case "manage":
+            await manageServersFlow();
             break;
         case "back":
             return;
