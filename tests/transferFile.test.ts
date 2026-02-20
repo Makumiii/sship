@@ -36,9 +36,9 @@ mock.module("fs/promises", () => ({
 
 const mockConnect = mock(async () => {});
 const mockEnd = mock(async () => {});
-const mockMkdirRemote = mock(async () => {});
-const mockFastPut = mock(async () => {});
-const mockFastGet = mock(async () => {});
+const mockMkdirRemote = mock(async (_path: string) => {});
+const mockFastPut = mock(async (_localPath: string, _remotePath: string) => {});
+const mockFastGet = mock(async (_remotePath: string, _localPath: string) => {});
 const mockList = mock(async (path: string) => {
     if (path.endsWith("/dir")) {
         return [
@@ -52,7 +52,7 @@ const mockList = mock(async (path: string) => {
     }
     return [];
 });
-const mockStatRemote = mock(async () => ({ isDirectory: true }));
+const mockStatRemote = mock(async (_path: string) => ({ isDirectory: true }));
 
 class MockClient {
     connect() { return mockConnect(); }

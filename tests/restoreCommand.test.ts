@@ -26,6 +26,7 @@ const mockSpawn = mock((_cmd: string, _args: string[]) => {
     stdout: EventEmitter;
     stderr: EventEmitter;
     on: (event: string, cb: (...args: unknown[]) => void) => void;
+    emit: (event: string, ...args: unknown[]) => void;
   };
   (child as unknown as { stdout: EventEmitter }).stdout = new EventEmitter();
   (child as unknown as { stderr: EventEmitter }).stderr = new EventEmitter();

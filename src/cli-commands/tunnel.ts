@@ -7,7 +7,7 @@ import {
     createTunnelWizard,
     discoverTunnelWizard,
 } from "../commands/tunnel.ts";
-import { getTunnel, loadTunnels, clearDeadPids } from "../utils/tunnelStorage.ts";
+import { getTunnel, clearDeadPids } from "../utils/tunnelStorage.ts";
 import { logger } from "../utils/logger.ts";
 
 export function registerTunnelCommand(program: Command) {

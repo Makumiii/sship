@@ -1,7 +1,6 @@
 import { logger } from "../utils/logger.ts";
 import { getAllFiles } from "../utils/getAllFiles.ts";
 import { select } from "../utils/select.ts";
-import { getKeys } from "../utils/getKeys.ts";
 import { unlinkSync } from "node:fs";
 import {homedir} from 'node:os'
 import {readFile, writeFile} from 'fs/promises'
@@ -87,5 +86,4 @@ export default async function deleteCommand(keyName?: string, yes?: boolean) {
   await removeServiceKey(selectedKey);
   
 }
-
 

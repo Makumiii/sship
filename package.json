@@ -9,6 +9,10 @@
   },
   "scripts": {
     "build": "bun build src/index.ts --outdir dist --target=node --external ssh2 --external ssh2-sftp-client && mkdir -p dist/public && cp src/transfer/public/* dist/public/",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "check": "npm run typecheck && npm run lint",
     "demo:prepare": "bash ./scripts/demo/setup-demo-home.sh",
     "demo:record": "bash ./scripts/demo/record-interactive.sh",
     "test": "BUN_TMPDIR=/tmp bun test",
@@ -19,9 +23,14 @@
     "test:phase-regression": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts ./tests/backupCommand.test.ts ./tests/restoreCommand.test.ts ./tests/initCommand.integration.ts ./tests/logsCommand.integration.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/bun": "latest",
     "@types/ssh2-sftp-client": "^9.0.6",
-    "prettier": "^3.6.2"
+    "eslint": "^10.0.0",
+    "globals": "^17.3.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0"
   },
   "peerDependencies": {
     "typescript": "^5"

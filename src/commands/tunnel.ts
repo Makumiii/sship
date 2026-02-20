@@ -92,7 +92,9 @@ export function parseListeningPorts(output: string): DiscoveredPort[] {
         if (!match) continue;
 
         const rawHost = match[1];
-        const port = Number.parseInt(match[2], 10);
+        const rawPort = match[2];
+        if (!rawHost || !rawPort) continue;
+        const port = Number.parseInt(rawPort, 10);
         if (!Number.isFinite(port)) continue;
         if (rawHost.includes("*")) continue;
 

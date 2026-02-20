@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 
 import "../src/transfer/public/helpers.js";
 
-const helpers = globalThis.SynergyHelpers;
+const helpers = (globalThis as unknown as { SynergyHelpers: any }).SynergyHelpers;
 
 describe("synergy helpers", () => {
     test("joinRemotePath normalizes slashes", () => {

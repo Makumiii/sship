@@ -1,6 +1,5 @@
 import { input } from "@inquirer/prompts";
 import type { UserPromptMessage } from "../types.ts";
-import { writeResponses } from "./io.ts";
 
 export async function promptUser(message: UserPromptMessage[]) {
   const responses: Record<string, string> = {};

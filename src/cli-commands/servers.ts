@@ -18,6 +18,7 @@ import {
   prepareBootstrapKey,
   verifyIdentityFileConnection,
 } from "../utils/serverBootstrap.ts";
+import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
 
 function buildSshArgs(server: ServerConfig, mode: "connect" | "test"): string[] {
   const args: string[] = ["-p", String(server.port), "-o", "ConnectTimeout=10"];
@@ -201,6 +202,13 @@ export function registerServersCommand(program: Command) {
         await updateSshConfig(updatedServer);
         logger.succeed(`Server "${server.name}" updated to identity_file auth.`);
 
+        const agentStatus = await ensureIdentityInAgent(finalIdentity, { interactive: true });
+        if (agentStatus === "added") {
+          logger.info(`Loaded key into ssh-agent: ${finalIdentity}`);
+        } else if (agentStatus === "failed") {
+          logger.warn(`Could not load key into ssh-agent automatically: ${finalIdentity}`);
+        }
+
         logger.start("Verifying key-based login...");
         const ok = await verifyIdentityFileConnection(updatedServer, finalIdentity);
         if (ok) {
@@ -245,6 +253,9 @@ export function registerServersCommand(program: Command) {
       if (server.authMode === "password") {
         logger.info("Password auth selected. SSH may prompt you for password.");
       }
+      if (server.authMode === "identity_file" && server.identityFile) {
+        await ensureIdentityInAgent(server.identityFile, { interactive: true });
+      }
       let args: string[];
       try {
         args = buildSshArgs(server, "test");
@@ -263,6 +274,7 @@ export function registerServersCommand(program: Command) {
         logger.succeed(`Connection to ${server.name} successful!`);
       } else {
         logger.fail(`Connection to ${server.name} failed`);
+        process.exitCode = 1;
       }
     });
 
@@ -278,6 +290,9 @@ export function registerServersCommand(program: Command) {
 
       let args: string[];
       try {
+        if (server.authMode === "identity_file" && server.identityFile) {
+          await ensureIdentityInAgent(server.identityFile, { interactive: true });
+        }
         args = buildSshArgs(server, "connect");
       } catch (error) {
         logger.fail(String(error));

@@ -7,14 +7,26 @@ import { EventEmitter } from "events";
 import Client from "ssh2-sftp-client";
 import { loadServers, getServer } from "../utils/serverStorage.ts";
 import type { ServerConfig } from "../types/serverTypes.ts";
+import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
 
-const PORT = 3847;
+const DEFAULT_PORT = 3847;
+let activePort = DEFAULT_PORT;
 const progressEmitter = new EventEmitter();
 
 interface FileInfo {
     name: string;
     isDir: boolean;
     size: number;
+}
+
+function getErrorMessage(error: unknown): string {
+    if (error instanceof Error) return error.message;
+    return String(error);
+}
+
+function isEncryptedKeyParseError(message: string): boolean {
+    const lower = message.toLowerCase();
+    return lower.includes("cannot parse privatekey") || lower.includes("encrypted private openssh key detected");
 }
 
 function buildRemoteSshArgs(server: ServerConfig, command: string): string[] {
@@ -63,18 +75,29 @@ async function listLocalFiles(dirPath: string): Promise<FileInfo[]> {
 
 // Keep using SSH for listing as it is faster/simpler to pipe ls -la than traversing SFTP objects for this specific display format
 async function listRemoteFiles(server: ServerConfig, remotePath: string): Promise<{ path: string, files: FileInfo[] }> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
         // Use ~ explicitly for home directory if path is empty
         // Note: cd "~" does not expand in bash. cd ~ does.
         // So we strictly handle the default case separately or ensure no quotes for tilde.
         const target = remotePath ? `"${remotePath}"` : "~";
         const cmd = `cd ${target} && pwd && ls -la`;
-        const args = buildRemoteSshArgs(server, cmd);
+        let args: string[] = [];
+        try {
+            args = buildRemoteSshArgs(server, cmd);
+        } catch (error) {
+            reject(error);
+            return;
+        }
         const ssh = spawn("ssh", args);
         let out = "";
+        let err = "";
         ssh.stdout.on("data", d => out += d);
+        ssh.stderr.on("data", d => err += d.toString());
         ssh.on("close", code => {
-            if (code !== 0) return resolve({ path: remotePath || "/", files: [] });
+            if (code !== 0) {
+                reject(new Error(err.trim() || `Remote listing failed with exit code ${code}`));
+                return;
+            }
 
             const lines = out.split("\n").filter(Boolean);
             const resolvedPath = lines[0]?.trim() || remotePath;
@@ -93,6 +116,64 @@ async function listRemoteFiles(server: ServerConfig, remotePath: string): Promis
                 files: files.sort((a, b) => (a.isDir === b.isDir ? a.name.localeCompare(b.name) : a.isDir ? -1 : 1))
             });
         });
+        ssh.on("error", (error) => reject(error));
+    });
+}
+
+async function connectSftpWithServerAuth(sftp: Client, server: ServerConfig): Promise<void> {
+    if (server.authMode === "password") {
+        throw new Error("Password-auth servers are not supported in Transfer yet. Use identity_file or ssh_agent.");
+    }
+
+    if (server.authMode === "identity_file") {
+        if (!server.identityFile) {
+            throw new Error(`Server "${server.name}" is missing identity file`);
+        }
+
+        try {
+            await sftp.connect({
+                host: server.host,
+                port: server.port,
+                username: server.user,
+                privateKey: await readFile(server.identityFile),
+                readyTimeout: 20000
+            });
+            return;
+        } catch (error) {
+            const message = getErrorMessage(error);
+            if (!isEncryptedKeyParseError(message)) {
+                throw error;
+            }
+
+            const agentStatus = await ensureIdentityInAgent(server.identityFile, { interactive: true });
+            const agent = process.env.SSH_AUTH_SOCK;
+            if (!agent || (agentStatus !== "added" && agentStatus !== "already_loaded")) {
+                throw new Error(
+                    `Encrypted key detected at ${server.identityFile}. Could not load it into ssh-agent automatically; run ssh-add ${server.identityFile} and retry.`
+                );
+            }
+
+            await sftp.connect({
+                host: server.host,
+                port: server.port,
+                username: server.user,
+                agent,
+                readyTimeout: 20000
+            });
+            return;
+        }
+    }
+
+    const agent = process.env.SSH_AUTH_SOCK;
+    if (!agent) {
+        throw new Error("SSH_AUTH_SOCK is not set. Start an ssh-agent or use identity_file auth mode.");
+    }
+    await sftp.connect({
+        host: server.host,
+        port: server.port,
+        username: server.user,
+        agent,
+        readyTimeout: 20000
     });
 }
 
@@ -102,33 +183,7 @@ export async function transferFile(req: IncomingMessage, server: ServerConfig, l
     let canceled = false;
 
     try {
-        if (server.authMode === "identity_file") {
-            if (!server.identityFile) {
-                throw new Error(`Server "${server.name}" is missing identity file`);
-            }
-            await sftp.connect({
-                host: server.host,
-                port: server.port,
-                username: server.user,
-                privateKey: await readFile(server.identityFile),
-                readyTimeout: 20000
-            });
-        } else {
-            if (server.authMode === "password") {
-                throw new Error("Password-auth servers are not supported in Transfer yet. Use identity_file or ssh_agent.");
-            }
-            const agent = process.env.SSH_AUTH_SOCK;
-            if (!agent) {
-                throw new Error("SSH_AUTH_SOCK is not set. Start an ssh-agent or use identity_file auth mode.");
-            }
-            await sftp.connect({
-                host: server.host,
-                port: server.port,
-                username: server.user,
-                agent,
-                readyTimeout: 20000
-            });
-        }
+        await connectSftpWithServerAuth(sftp, server);
 
         // Handle cancellation from HTTP request closing
         const onReqClose = () => {
@@ -233,7 +288,7 @@ export async function transferFile(req: IncomingMessage, server: ServerConfig, l
 }
 
 async function handleRequest(req: IncomingMessage, res: ServerResponse) {
-    const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+    const url = new URL(req.url || "/", `http://localhost:${activePort}`);
     const path = url.pathname;
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -304,8 +359,12 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
             const s = await getServer(sName || "");
             if (!s) return res.end(JSON.stringify({ success: false, error: "Server not found" }));
 
-            const result = await listRemoteFiles(s, rPath);
-            res.end(JSON.stringify({ success: true, data: result }));
+            try {
+                const result = await listRemoteFiles(s, rPath);
+                res.end(JSON.stringify({ success: true, data: result }));
+            } catch (error) {
+                res.end(JSON.stringify({ success: false, error: getErrorMessage(error) }));
+            }
             return;
         }
 
@@ -340,10 +399,39 @@ export function startTransferServer(): Promise<void> {
         const onError = (error: Error) => reject(error);
 
         server.once("error", onError);
-        server.listen(PORT, () => {
+        server.listen(activePort, () => {
             server.off("error", onError);
             resolve();
         });
     });
 }
-export { PORT };
+
+export function getTransferPort(): number {
+    return activePort;
+}
+
+export async function startTransferServerWithFallback(startPort = DEFAULT_PORT, maxAttempts = 10): Promise<number> {
+    let port = startPort;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        activePort = port;
+        try {
+            await startTransferServer();
+            return activePort;
+        } catch (error) {
+            lastError = error;
+            const code = (error as NodeJS.ErrnoException)?.code;
+            if (code !== "EADDRINUSE") {
+                throw error;
+            }
+            port += 1;
+        }
+    }
+
+    throw lastError instanceof Error
+        ? lastError
+        : new Error(`Unable to bind transfer server after ${maxAttempts} attempts`);
+}
+
+export { DEFAULT_PORT as PORT };

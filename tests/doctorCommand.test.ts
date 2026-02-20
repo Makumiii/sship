@@ -127,7 +127,7 @@ Host staging
   IdentityFile /mock/home/.ssh/missing
 `);
         mockAccess.mockRejectedValue(new Error("ENOENT"));
-        mockLoadServiceKeys.mockResolvedValueOnce(["ghost-key"]);
+        mockLoadServiceKeys.mockResolvedValueOnce(["ghost-key"] as any);
         mockLoadServers.mockResolvedValueOnce([
             {
                 name: "broken-server",
@@ -138,8 +138,8 @@ Host staging
                 identityFile: "/mock/home/.ssh/missing.pem",
                 createdAt: new Date().toISOString(),
             },
-        ]);
-        mockLoadTunnels.mockResolvedValueOnce([{ name: "t1", pid: 1234 }]);
+        ] as any);
+        mockLoadTunnels.mockResolvedValueOnce([{ name: "t1", pid: 1234 }] as any);
 
         await doctorCommand({ fixAll: true });
 

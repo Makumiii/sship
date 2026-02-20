@@ -1,14 +1,14 @@
 import { spawn } from "child_process";
-import { startTransferServer, PORT } from "../transfer/server.ts";
+import { startTransferServerWithFallback, getTransferPort } from "../transfer/server.ts";
 import { logger } from "../utils/logger.ts";
 import { platform } from "os";
 
 export async function transferCommand(): Promise<void> {
     try {
         // Start the server
-        await startTransferServer();
+        await startTransferServerWithFallback();
 
-        const url = `http://localhost:${PORT}`;
+        const url = `http://localhost:${getTransferPort()}`;
 
         // Attempt to open the browser
         const opener = platform() === "win32" ? "start" : platform() === "darwin" ? "open" : "xdg-open";
@@ -19,7 +19,7 @@ export async function transferCommand(): Promise<void> {
                 logger.info(`Could not automatically open browser. Please visit: ${url}`);
             });
             openerProcess.unref();
-        } catch (e) {
+        } catch {
             logger.info(`Could not automatically open browser. Please visit: ${url}`);
         }
 
