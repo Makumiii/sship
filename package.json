@@ -1,7 +1,19 @@
 {
   "name": "sship",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "The ultimate SSH companion tool with built-in Synergy (SFTP) file transfer.",
+  "keywords": [
+    "ssh",
+    "ssh-key",
+    "ssh-agent",
+    "sftp",
+    "cli",
+    "devops",
+    "tunnel",
+    "port-forwarding",
+    "server-management",
+    "remote-access"
+  ],
   "type": "module",
   "private": false,
   "bin": {
