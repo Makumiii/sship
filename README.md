@@ -107,6 +107,20 @@ If you prefer command mode, inspect all commands and options with:
 sship --help
 ```
 
+## Troubleshooting
+
+### Service Key Test Fails but SSH Works
+
+If `Test Connection` fails in Service Keys but plain `ssh` works, you likely have multiple keys for the same host.
+
+- SSHIP validates the alias key strictly (similar to `IdentitiesOnly=yes`)
+- Plain `ssh` may fall back to a different agent key and still authenticate
+
+Fix:
+
+- Add the alias public key (for example `~/.ssh/github.pub`) to that service account
+- Or update that alias `IdentityFile` to the key already authorized on the service
+
 ## Contributing
 
 Contributions are welcome. Open an issue or PR on the [GitHub repository](https://github.com/Makumiii/sship).
