@@ -14,7 +14,11 @@ export async function transferCommand(): Promise<void> {
         const opener = platform() === "win32" ? "start" : platform() === "darwin" ? "open" : "xdg-open";
 
         try {
-            spawn(opener, [url], { detached: true, stdio: "ignore" }).unref();
+            const openerProcess = spawn(opener, [url], { detached: true, stdio: "ignore" });
+            openerProcess.on("error", () => {
+                logger.info(`Could not automatically open browser. Please visit: ${url}`);
+            });
+            openerProcess.unref();
         } catch (e) {
             logger.info(`Could not automatically open browser. Please visit: ${url}`);
         }
@@ -26,6 +30,7 @@ export async function transferCommand(): Promise<void> {
             // This promise never resolves, keeping the server running until SIGINT
         });
     } catch (error) {
-        logger.fail(`Failed to start file transfer: ${error}`);
+        const message = error instanceof Error ? error.message : String(error);
+        logger.fail(`Failed to start file transfer: ${message}`);
     }
 }

@@ -1,105 +1,130 @@
 # SSHIP
 
-![SSHIP Screenshot](https://raw.githubusercontent.com/Makumiii/sship/main/assets/sship-logo.png)
+<p align="center">
+  <img src="./assets/sship-logo.png" alt="SSHIP logo" width="780" />
+</p>
 
-**SSHIP** is the ultimate SSH companion tool. It simplifies your SSH key management and introduces **Synergy**, a beautiful, modern file transfer interface directly in your browser.
+<p align="center">
+  <img src="./assets/interactive-cli.gif" alt="SSHIP interactive CLI demo" width="780" />
+</p>
 
-## Flagship Feature: Synergy
+**SSHIP** is an interactive SSH workflow app.
+It helps you manage keys, servers, tunnels, backup/restore, and transfer flows without memorizing long command syntax.
 
-Say goodbye to clunky FTP clients. **Synergy** is a built-in, polished SFTP interface that runs locally and connects to your servers with zero setup.
+## What This App Does
 
-*   **Beautiful UI:** A clean, focused interface with fast navigation.
-*   **Drag & Drop:** Upload and download files (including directories) by dragging between panes.
-*   **Real-time Progress:** Visual progress and status updates for transfers.
-*   **Secure & Direct:** Uses your SSH config and PEM servers with no passwords stored.
-*   **Smart Actions:** Context-aware upload/download actions and refreshable connections.
+SSHIP gives you one guided interface for day-to-day SSH operations.
 
-Run it instantly:
-```bash
-sship transfer
-```
+- Create and manage service keys for platforms like GitHub/GitLab/Bitbucket
+- Manage server profiles and connect/test them quickly
+- Discover and run SSH tunnels with saved configs
+- Backup and restore your SSH files safely
+- Launch Synergy transfer for browser-based file movement
+- Run environment checks and diagnostics (`init`, `doctor`, logs)
 
----
+## Install
 
-## Core Features
-
-SSHIP provides a comprehensive suite of tools for efficient SSH management:
-
-*   **Service Keys**
-    *   **Create (`sship create`):** Generate ed25519 keys and write SSH config entries for third-party services.
-    *   **List/Delete (interactive):** Manage only keys created through SSHIP service keys.
-    *   **Onboard (`sship onboard`):** Import existing keys into the SSHIP system.
-*   **Server Connections (PEM)**
-    *   **Manage servers:** Add, edit, delete, connect, and test PEM-based server entries.
-*   **Tunnel Manager**
-    *   **Discover and bind:** Auto-discover remote listening ports and bind them locally.
-    *   **Manage tunnels:** Start, stop, and delete saved tunnels.
-*   **Utilities**
-    *   **Doctor (`sship doctor`):** Diagnose and fix broken SSH config entries.
-    *   **Backup (`sship backup`):** Securely backup your keys (GPG encryption supported).
-
-## Installation
-
-### Option 1: Via npm (Recommended)
-The easiest way to install SSHIP is via npm. This works on macOS, Linux, and Windows (via WSL).
+### npm (Recommended)
 
 ```bash
 npm install -g sship
 ```
 
-### Option 2: Via Install Script (Linux/macOS)
-For a quick, dependency-free setup on Unix-like systems:
+### Linux/macOS Install Script
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Makumiii/sship/main/scripts/bash/install.sh | sh
 ```
 
-### Option 3: Manual / Development
-If you want to hack on SSHIP:
+### Development
 
-1.  Clone the repo: `git clone https://github.com/Makumiii/sship.git`
-2.  Install dependencies: `bun install`
-3.  Build: `bun run build`
-
-## Usage
-
-### File Transfer (Synergy)
-Launch the web interface to transfer files between your local machine and any configured server.
 ```bash
-sship transfer
+git clone https://github.com/Makumiii/sship.git
+cd sship
+bun install
+bun run build
 ```
+
+## Quick Start
+
+Start the interactive CLI:
+
+```bash
+sship
+```
+
+Use the menu to access Service Keys, Servers, Tunnels, Backup/Restore, Onboard, Doctor, Logs, and Transfer.
+
+## Main Features
+
+### Interactive CLI First
+
+- Guided prompts and validations
+- Clear action menus for each workflow
+- Lower cognitive load than raw command memorization
 
 ### Service Keys
-Create a new key for GitHub (for example):
-```bash
-sship create -n github-key -e me@gmail.com -h github.com -u git
-```
 
-Manage service keys via the interactive menu:
-```bash
-sship
-```
+- Template-based creation for common SSH-enabled services
+- Track and manage only keys created/onboarded in SSHIP
+- Public-key display and key lifecycle actions in one place
+
+### Server Connections
+
+- Save server profiles with host/user/key metadata
+- Test connectivity before use
+- Connect via named server profiles
 
 ### Tunnel Manager
-Discover a remote port and bind it locally:
+
+- Discover remote listening ports
+- Save/start/stop tunnel definitions
+- Reuse tunnel configs without retyping options
+
+### Backup and Restore
+
+- Backup SSH assets
+- Dry-run restore validation
+- Selective restore support
+
+### Transfer (Synergy)
+
+- Browser-based transfer interface
+- SSH-config based connections (identity file or SSH agent)
+- File operations with real-time feedback
+
+### Health and Setup Tools
+
+- `sship init` / `sship init --fix`
+- `sship doctor` / `sship doctor --fix-all`
+- `sship logs` filtering for troubleshooting
+
+## Raw CLI (Optional)
+
+If you prefer command mode, inspect all commands and options with:
+
 ```bash
-sship tunnel discover
+sship --help
 ```
 
-### Server Connections (PEM)
-Use the interactive server manager to add, connect, edit, or test PEM servers:
-```bash
-sship
-```
+## Troubleshooting
 
-### Doctor
-Fix configuration issues:
-```bash
-sship doctor
-```
+### Service Key Test Fails but SSH Works
+
+If `Test Connection` fails in Service Keys but plain `ssh` works, you likely have multiple keys for the same host.
+
+- SSHIP validates the alias key strictly (similar to `IdentitiesOnly=yes`)
+- Plain `ssh` may fall back to a different agent key and still authenticate
+
+Fix:
+
+- Add the alias public key (for example `~/.ssh/github.pub`) to that service account
+- Or update that alias `IdentityFile` to the key already authorized on the service
 
 ## Contributing
-Contributions are welcome! Please open an issue or pull request on the [GitHub repository](https://github.com/Makumiii/sship).
+
+Contributions are welcome. Open an issue or PR on the [GitHub repository](https://github.com/Makumiii/sship).
 
 ## License
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+MIT. See [LICENSE](LICENSE).

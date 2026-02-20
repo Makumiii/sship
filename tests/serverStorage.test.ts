@@ -1,86 +1,106 @@
-import { describe, expect, test, mock, beforeEach } from "bun:test";
-import { addServer, deleteServer, loadServers, updateServer } from "../src/utils/serverStorage";
-import type { ServerConfig } from "../src/types/serverTypes";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
+import { existsSync, mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { ServerConfig } from "../src/types/serverTypes.ts";
 
-// Mock fs/promises and fs
-const mockReadFile = mock(async () => JSON.stringify({ servers: [] }));
-const mockWriteFile = mock(async () => { });
-const mockMkdir = mock(async () => { });
-const mockExistsSync = mock(() => true);
+type ServerStorageModule = typeof import("../src/utils/serverStorage.ts");
 
-mock.module("fs/promises", () => ({
-    readFile: mockReadFile,
-    writeFile: mockWriteFile,
-    mkdir: mockMkdir,
-}));
+let testHome = "";
 
-mock.module("fs", () => ({
-    existsSync: mockExistsSync,
-}));
-
-mock.module("os", () => ({
-    homedir: () => "/mock/home",
-}));
+async function loadServerStorageModule(): Promise<ServerStorageModule> {
+  mock.module("os", () => ({ homedir: () => testHome }));
+  return import(`../src/utils/serverStorage.ts?t=${Date.now()}-${Math.random()}`);
+}
 
 describe("Server Storage", () => {
-    const testServer: ServerConfig = {
-        name: "test-db",
-        host: "10.0.0.1",
-        port: 22,
-        user: "admin",
-        pemKeyPath: "/key.pem",
-        createdAt: new Date().toISOString()
-    };
+  const testServer: ServerConfig = {
+    name: "test-db",
+    host: "10.0.0.1",
+    port: 22,
+    user: "admin",
+    authMode: "identity_file",
+    identityFile: "/tmp/key",
+    createdAt: new Date().toISOString(),
+  };
 
-    beforeEach(() => {
-        mockReadFile.mockClear();
-        mockWriteFile.mockClear();
-        mockExistsSync.mockClear();
-        mockReadFile.mockResolvedValue(JSON.stringify({ servers: [] }));
-    });
+  beforeEach(() => {
+    mock.restore();
+    testHome = mkdtempSync(join(tmpdir(), "sship-server-storage-"));
+  });
 
-    test("addServer saves new server", async () => {
-        await addServer(testServer);
-        expect(mockWriteFile).toHaveBeenCalled();
-        const args = mockWriteFile.mock.calls[0] as unknown as [string, string];
-        expect(args[1]).toContain("test-db");
-        expect(args[1]).toContain("10.0.0.1");
-    });
+  afterEach(() => {
+    if (testHome && existsSync(testHome)) {
+      rmSync(testHome, { recursive: true, force: true });
+    }
+  });
 
-    test("addServer throws error if server exists", async () => {
-        mockReadFile.mockResolvedValue(JSON.stringify({ servers: [testServer] }));
-        expect(addServer(testServer)).rejects.toThrow('Server with name "test-db" already exists');
-    });
+  test("addServer and loadServers roundtrip", async () => {
+    const { addServer, loadServers } = await loadServerStorageModule();
+    await addServer(testServer);
 
-    test("loadServers returns empty list if file corrupt", async () => {
-        mockReadFile.mockResolvedValue("invalid json");
-        const servers = await loadServers();
-        expect(servers).toEqual([]);
-    });
+    const servers = await loadServers();
+    expect(servers).toHaveLength(1);
+    expect(servers[0]?.name).toBe("test-db");
+    expect(servers[0]?.authMode).toBe("identity_file");
+  });
 
-    test("deleteServer removes server", async () => {
-        mockReadFile.mockResolvedValue(JSON.stringify({
-            servers: [
-                testServer,
-                { ...testServer, name: "other" }
-            ]
-        }));
+  test("addServer throws if name exists", async () => {
+    const { addServer } = await loadServerStorageModule();
+    await addServer(testServer);
+    await expect(addServer(testServer)).rejects.toThrow('Server with name "test-db" already exists');
+  });
 
-        await deleteServer("test-db");
+  test("loadServers drops invalid legacy entries", async () => {
+    const { loadServers } = await loadServerStorageModule();
+    const serversFile = join(testHome, ".sship", "servers.json");
+    mkdirSync(join(testHome, ".sship"), { recursive: true });
+    // Ensure directory/file exists with mixed content.
+    writeFileSync(
+      serversFile,
+      JSON.stringify(
+        {
+          servers: [
+            testServer,
+            {
+              name: "legacy",
+              host: "1.1.1.1",
+              port: 22,
+              user: "root",
+              pemKeyPath: "/old/path",
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        },
+        null,
+        2
+      ),
+      "utf-8"
+    );
 
-        expect(mockWriteFile).toHaveBeenCalled();
-        const writtenData = JSON.parse((mockWriteFile.mock.calls[0] as unknown as [string, string])[1]);
-        expect(writtenData.servers).toHaveLength(1);
-        expect(writtenData.servers[0].name).toBe("other");
-    });
+    const servers = await loadServers();
+    expect(servers).toHaveLength(1);
+    expect(servers[0]?.name).toBe("test-db");
+  });
 
-    test("updateServer modifies existing server", async () => {
-        mockReadFile.mockResolvedValue(JSON.stringify({ servers: [testServer] }));
-        const updated = { ...testServer, host: "10.0.0.99" };
+  test("updateServer modifies existing server", async () => {
+    const { addServer, updateServer, getServer } = await loadServerStorageModule();
+    await addServer(testServer);
 
-        await updateServer("test-db", updated);
+    const updated = { ...testServer, host: "10.0.0.99" };
+    await updateServer("test-db", updated);
 
-        const writtenData = JSON.parse((mockWriteFile.mock.calls[0] as unknown as [string, string])[1]);
-        expect(writtenData.servers[0].host).toBe("10.0.0.99");
-    });
+    const server = await getServer("test-db");
+    expect(server?.host).toBe("10.0.0.99");
+  });
+
+  test("deleteServer removes existing server", async () => {
+    const { addServer, deleteServer, loadServers } = await loadServerStorageModule();
+    await addServer(testServer);
+
+    await deleteServer("test-db");
+
+    const servers = await loadServers();
+    expect(servers).toHaveLength(0);
+  });
 });

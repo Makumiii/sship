@@ -15,13 +15,32 @@ if [ -z "$NAME" ] || [ -z "$MACHINE_USER" ] || [ -z "$HOST" ]; then
 fi
 
 if [ ! -d "$PATH_TO_CONF" ]; then
-    mkdir -p "$PATH_TO_CONF "
-    
+    mkdir -p "$PATH_TO_CONF"
 fi
 
 if [ ! -f "$PATH_TO_CONF/$CONF_FILE" ]; then
     touch "$PATH_TO_CONF/$CONF_FILE"
 fi
+
+# Remove any existing block for this alias to keep config idempotent.
+TMP_FILE="$(mktemp)"
+awk -v host="$HOST_ALIAS" '
+BEGIN { skip=0 }
+/^Host[ \t]+/ {
+    n = split($0, parts, /[ \t]+/)
+    skip=0
+    for (i=2; i<=n; i++) {
+        if (parts[i] == host) {
+            skip=1
+            break
+        }
+    }
+}
+{
+    if (!skip) print $0
+}
+' "$PATH_TO_CONF/$CONF_FILE" > "$TMP_FILE"
+mv "$TMP_FILE" "$PATH_TO_CONF/$CONF_FILE"
 
 cat <<EOF >> "$PATH_TO_CONF/$CONF_FILE"
 Host $HOST_ALIAS

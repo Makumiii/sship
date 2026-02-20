@@ -33,6 +33,8 @@ export const logger = {
     if (spinner) {
       spinner.succeed(text);
       spinner = null;
+    } else {
+      ora(text).succeed();
     }
     writeToFile(`SUCCESS: ${text}`);
   },
@@ -40,6 +42,8 @@ export const logger = {
     if (spinner) {
       spinner.fail(text);
       spinner = null;
+    } else {
+      ora(text).fail();
     }
     writeToFile(`FAIL: ${text}`);
   },
