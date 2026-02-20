@@ -8,15 +8,17 @@ const SSH_DIR = join(homedir(), ".ssh");
 const SSH_CONFIG_PATH = join(homedir(), ".ssh", "config");
 
 export function generateSshConfigBlock(server: ServerConfig): string {
+    const identityLine =
+        server.authMode === "identity_file" && server.identityFile
+            ? `    IdentityFile ${server.identityFile}\n    IdentitiesOnly yes\n`
+            : "";
     return `
 # Added by sship - ${server.name}
 Host ${server.name}
     HostName ${server.host}
     Port ${server.port}
     User ${server.user}
-    IdentityFile ${server.pemKeyPath}
-    IdentitiesOnly yes
-`;
+${identityLine}`.trimEnd() + "\n";
 }
 
 function isHostHeader(line: string): boolean {

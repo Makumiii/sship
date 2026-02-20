@@ -76,7 +76,7 @@ if (hasArgs) {
     // Interactive mode - show menu
     const menuChoices: SelectChoice<Tasks>[] = [
         { name: "Service Keys", value: "serviceKeys" },
-        { name: "Server Connections (PEM)", value: "servers" },
+        { name: "Server Connections", value: "servers" },
         { name: "Transfer Files (Synergy)", value: "transfer" },
         { name: "Tunnel Manager", value: "tunnel" },
         { name: "Onboard Keys", value: "onboard" },

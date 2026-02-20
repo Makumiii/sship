@@ -16,7 +16,7 @@ It helps you manage keys, servers, tunnels, backup/restore, and transfer flows w
 SSHIP gives you one guided interface for day-to-day SSH operations.
 
 - Create and manage service keys for platforms like GitHub/GitLab/Bitbucket
-- Manage PEM server profiles and connect/test them quickly
+- Manage server profiles and connect/test them quickly
 - Discover and run SSH tunnels with saved configs
 - Backup and restore your SSH files safely
 - Launch Synergy transfer for browser-based file movement
@@ -69,7 +69,7 @@ Use the menu to access Service Keys, Servers, Tunnels, Backup/Restore, Onboard, 
 - Track and manage only keys created/onboarded in SSHIP
 - Public-key display and key lifecycle actions in one place
 
-### Server Connections (PEM)
+### Server Connections
 
 - Save server profiles with host/user/key metadata
 - Test connectivity before use
@@ -90,7 +90,7 @@ Use the menu to access Service Keys, Servers, Tunnels, Backup/Restore, Onboard, 
 ### Transfer (Synergy)
 
 - Browser-based transfer interface
-- SSH-config/PEM based connections
+- SSH-config based connections (identity file or SSH agent)
 - File operations with real-time feedback
 
 ### Health and Setup Tools

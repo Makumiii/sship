@@ -81,7 +81,8 @@ const server = {
     host: "127.0.0.1",
     port: 22,
     user: "root",
-    pemKeyPath: "/mock/key.pem",
+    authMode: "identity_file" as const,
+    identityFile: "/mock/key.pem",
     createdAt: new Date().toISOString(),
 };
 

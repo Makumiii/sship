@@ -134,7 +134,8 @@ Host staging
                 host: "1.1.1.1",
                 port: 22,
                 user: "root",
-                pemKeyPath: "/mock/home/.ssh/missing.pem",
+                authMode: "identity_file",
+                identityFile: "/mock/home/.ssh/missing.pem",
                 createdAt: new Date().toISOString(),
             },
         ]);

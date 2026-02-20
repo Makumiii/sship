@@ -19,7 +19,8 @@ describe("SSH Config Management", () => {
         host: "192.168.1.1",
         port: 22,
         user: "root",
-        pemKeyPath: "/tmp/mock-home/.ssh/test-server.pem",
+        authMode: "identity_file",
+        identityFile: "/tmp/mock-home/.ssh/test-server.pem",
         createdAt: new Date().toISOString(),
     };
 

@@ -17,6 +17,29 @@ interface FileInfo {
     size: number;
 }
 
+function buildRemoteSshArgs(server: ServerConfig, command: string): string[] {
+    const args = [
+        "-p",
+        String(server.port),
+        "-o",
+        "StrictHostKeyChecking=accept-new",
+        "-o",
+        "BatchMode=yes",
+        "-o",
+        "ConnectTimeout=10",
+    ];
+
+    if (server.authMode === "identity_file") {
+        if (!server.identityFile) {
+            throw new Error(`Server "${server.name}" is missing identity file`);
+        }
+        args.push("-i", server.identityFile, "-o", "IdentitiesOnly=yes");
+    }
+
+    args.push(`${server.user}@${server.host}`, command);
+    return args;
+}
+
 
 
 async function listLocalFiles(dirPath: string): Promise<FileInfo[]> {
@@ -42,7 +65,7 @@ async function listRemoteFiles(server: ServerConfig, remotePath: string): Promis
         // So we strictly handle the default case separately or ensure no quotes for tilde.
         const target = remotePath ? `"${remotePath}"` : "~";
         const cmd = `cd ${target} && pwd && ls -la`;
-        const args = ["-i", server.pemKeyPath, "-p", String(server.port), "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", `${server.user}@${server.host}`, cmd];
+        const args = buildRemoteSshArgs(server, cmd);
         const ssh = spawn("ssh", args);
         let out = "";
         ssh.stdout.on("data", d => out += d);
@@ -75,13 +98,33 @@ export async function transferFile(req: IncomingMessage, server: ServerConfig, l
     let canceled = false;
 
     try {
-        await sftp.connect({
-            host: server.host,
-            port: server.port,
-            username: server.user,
-            privateKey: await readFile(server.pemKeyPath),
-            readyTimeout: 20000
-        });
+        if (server.authMode === "identity_file") {
+            if (!server.identityFile) {
+                throw new Error(`Server "${server.name}" is missing identity file`);
+            }
+            await sftp.connect({
+                host: server.host,
+                port: server.port,
+                username: server.user,
+                privateKey: await readFile(server.identityFile),
+                readyTimeout: 20000
+            });
+        } else {
+            if (server.authMode === "password") {
+                throw new Error("Password-auth servers are not supported in Transfer yet. Use identity_file or ssh_agent.");
+            }
+            const agent = process.env.SSH_AUTH_SOCK;
+            if (!agent) {
+                throw new Error("SSH_AUTH_SOCK is not set. Start an ssh-agent or use identity_file auth mode.");
+            }
+            await sftp.connect({
+                host: server.host,
+                port: server.port,
+                username: server.user,
+                agent,
+                readyTimeout: 20000
+            });
+        }
 
         // Handle cancellation from HTTP request closing
         const onReqClose = () => {

@@ -12,7 +12,8 @@ let serverRecords = [
         host: "10.0.0.1",
         port: 2222,
         user: "ubuntu",
-        pemKeyPath: "/mock/key.pem",
+        authMode: "identity_file",
+        identityFile: "/mock/key.pem",
         createdAt: new Date().toISOString(),
     },
 ];
@@ -25,7 +26,7 @@ const mockGetServer = mock(async (name: string) => {
 const mockAddServer = mock(async () => {});
 const mockDeleteServer = mock(async () => {});
 const mockUpdateServer = mock(async () => {});
-const mockCopyPemToSsh = mock(async (path: string) => path);
+const mockCopyIdentityToSsh = mock(async (path: string) => path);
 const mockAddToSshConfig = mock(async () => {});
 const mockRemoveFromSshConfig = mock(async () => {});
 const mockUpdateSshConfig = mock(async () => {});
@@ -47,7 +48,7 @@ mock.module(storagePath, () => ({
     addServer: mockAddServer,
     updateServer: mockUpdateServer,
     deleteServer: mockDeleteServer,
-    copyPemToSsh: mockCopyPemToSsh,
+    copyIdentityToSsh: mockCopyIdentityToSsh,
 }));
 mock.module(sshConfigPath, () => ({
     addToSshConfig: mockAddToSshConfig,
@@ -83,7 +84,8 @@ describe("serversCommand", () => {
                 host: "10.0.0.1",
                 port: 2222,
                 user: "ubuntu",
-                pemKeyPath: "/mock/key.pem",
+                authMode: "identity_file",
+                identityFile: "/mock/key.pem",
                 createdAt: new Date().toISOString(),
             },
         ];
@@ -98,18 +100,20 @@ describe("serversCommand", () => {
         selectQueue.push("manage", "alpha", "connect");
         await serversCommand();
         expect(mockRunCommand).toHaveBeenCalledWith("ssh", [
-            "-i",
-            "/mock/key.pem",
             "-p",
             "2222",
+            "-o",
+            "ConnectTimeout=10",
+            "-i",
+            "/mock/key.pem",
             "-o",
             "IdentitiesOnly=yes",
             "ubuntu@10.0.0.1",
         ]);
     });
 
-    test("adds server using existing pem key", async () => {
-        selectQueue.push("add", "prod.pem");
+    test("adds server using ssh agent auth", async () => {
+        selectQueue.push("add", "ssh_agent");
         inputQueue.push("prod-api", "192.168.1.50", "22", "ec2-user");
 
         await serversCommand();
@@ -120,8 +124,22 @@ describe("serversCommand", () => {
         expect(added.host).toBe("192.168.1.50");
         expect(added.port).toBe(22);
         expect(added.user).toBe("ec2-user");
-        expect(added.pemKeyPath).toBe("/mock/home/.ssh/prod.pem");
+        expect(added.authMode).toBe("ssh_agent");
+        expect(added.identityFile).toBeUndefined();
         expect(mockAddToSshConfig).toHaveBeenCalled();
+    });
+
+    test("adds server using password auth", async () => {
+        selectQueue.push("add", "password");
+        inputQueue.push("lan-pass", "192.168.100.189", "22", "maks");
+
+        await serversCommand();
+
+        expect(mockAddServer).toHaveBeenCalled();
+        const added = (mockAddServer.mock.calls[0] as unknown as [Record<string, string | number>])[0];
+        expect(added.name).toBe("lan-pass");
+        expect(added.authMode).toBe("password");
+        expect(added.identityFile).toBeUndefined();
     });
 
     test("deletes server from manage flow", async () => {

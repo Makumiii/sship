@@ -101,8 +101,12 @@ async function checkServerRegistry(fixAll: boolean): Promise<void> {
   const broken = [];
 
   for (const server of servers) {
-    const exists = await checkFileExists(server.pemKeyPath);
-    if (!exists) {
+    if (server.authMode === "identity_file" && server.identityFile) {
+      const exists = await checkFileExists(server.identityFile);
+      if (!exists) {
+        broken.push(server);
+      }
+    } else if (server.authMode === "identity_file") {
       broken.push(server);
     }
   }
@@ -110,14 +114,14 @@ async function checkServerRegistry(fixAll: boolean): Promise<void> {
   if (broken.length === 0) return;
 
   logger.warn(
-    `Found servers with missing PEM files: ${broken.map((s) => `${s.name} (${s.pemKeyPath})`).join(", ")}`
+    `Found servers with missing identity files: ${broken.map((s) => `${s.name} (${s.identityFile ?? "missing path"})`).join(", ")}`
   );
   if (!fixAll) return;
 
   for (const server of broken) {
     await deleteServer(server.name);
   }
-  logger.info(`Removed ${broken.length} server entries with missing PEM files.`);
+  logger.info(`Removed ${broken.length} server entries with missing identity files.`);
 }
 
 async function checkTunnelRegistry(fixAll: boolean): Promise<void> {
