@@ -13,6 +13,7 @@ const mockPromptUser = mock(async (messages: Array<{ id: string; initialValue?: 
 const mockSelect = mock(async () => "github");
 
 const mockAddServiceKey = mock(async () => {});
+const mockEnsureIdentityInAgent = mock(async () => "added");
 const mockLogger = {
     info: mock(() => {}),
     fail: mock(() => {}),
@@ -25,6 +26,7 @@ let spawnExitCode = 0;
 const mockSpawn = mock(() => {
     const child = new EventEmitter() as unknown as {
         on: (event: string, cb: (...args: unknown[]) => void) => void;
+        emit: (event: string, ...args: unknown[]) => void;
     };
 
     setTimeout(() => {
@@ -37,11 +39,13 @@ const mockSpawn = mock(() => {
 const promptPath = new URL("../src/utils/prompt.ts", import.meta.url).pathname;
 const selectPath = new URL("../src/utils/select.ts", import.meta.url).pathname;
 const serviceKeysPath = new URL("../src/utils/serviceKeys.ts", import.meta.url).pathname;
+const sshAgentPath = new URL("../src/utils/sshAgent.ts", import.meta.url).pathname;
 const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
 
 mock.module(promptPath, () => ({ promptUser: mockPromptUser }));
 mock.module(selectPath, () => ({ select: mockSelect }));
 mock.module(serviceKeysPath, () => ({ addServiceKey: mockAddServiceKey }));
+mock.module(sshAgentPath, () => ({ ensureIdentityInAgent: mockEnsureIdentityInAgent }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
 mock.module("child_process", () => ({ spawn: mockSpawn }));
 
@@ -53,6 +57,7 @@ describe("create key command", () => {
         mockPromptUser.mockClear();
         mockSelect.mockClear();
         mockAddServiceKey.mockClear();
+        mockEnsureIdentityInAgent.mockClear();
         mockSpawn.mockClear();
         mockLogger.start.mockClear();
         mockLogger.succeed.mockClear();
@@ -77,6 +82,7 @@ describe("create key command", () => {
         expect(mockLogger.start).toHaveBeenCalledWith("Generating SSH key...");
         expect(mockLogger.succeed).toHaveBeenCalledWith("SSH key creation complete.");
         expect(mockAddServiceKey).toHaveBeenCalledWith("gh-prod");
+        expect(mockEnsureIdentityInAgent).toHaveBeenCalled();
     });
 
     test("does not add service key when script fails", async () => {

@@ -6,6 +6,7 @@ import { existsSync } from "node:fs";
 import { tmpdir } from "os";
 import { runCommand } from "../utils/command";
 import { basename } from "path";
+import type { Dirent } from "node:fs";
 import { resolveScriptPath } from "../utils/scriptPath.ts";
 
 const location = `${homedir()}/.ssh`;
@@ -29,7 +30,7 @@ export default async function backupCommand(options?: { passphrase?: string }) {
     }
 
     logger.start(`Reading SSH directory: ${location}`);
-    let items: Awaited<ReturnType<typeof readdir>>;
+    let items: Dirent[];
     try {
         items = await readdir(location, { withFileTypes: true });
     } catch (error) {

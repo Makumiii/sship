@@ -30,6 +30,7 @@ const mockCopyIdentityToSsh = mock(async (path: string) => path);
 const mockAddToSshConfig = mock(async () => {});
 const mockRemoveFromSshConfig = mock(async () => {});
 const mockUpdateSshConfig = mock(async () => {});
+const mockEnsureIdentityInAgent = mock(async () => "already_loaded");
 const mockExistsSync = mock(() => true);
 const mockReaddirSync = mock(() => ["prod.pem"]);
 
@@ -38,6 +39,7 @@ const commandPath = new URL("../src/utils/command.ts", import.meta.url).pathname
 const storagePath = new URL("../src/utils/serverStorage.ts", import.meta.url).pathname;
 const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
 const sshConfigPath = new URL("../src/utils/sshConfig.ts", import.meta.url).pathname;
+const sshAgentPath = new URL("../src/utils/sshAgent.ts", import.meta.url).pathname;
 
 mock.module(selectPath, () => ({ select: mockSelect }));
 mock.module("@inquirer/prompts", () => ({ input: mockInput }));
@@ -55,6 +57,7 @@ mock.module(sshConfigPath, () => ({
     removeFromSshConfig: mockRemoveFromSshConfig,
     updateSshConfig: mockUpdateSshConfig,
 }));
+mock.module(sshAgentPath, () => ({ ensureIdentityInAgent: mockEnsureIdentityInAgent }));
 mock.module("fs", () => ({
     existsSync: mockExistsSync,
     readdirSync: mockReaddirSync,
@@ -94,6 +97,7 @@ describe("serversCommand", () => {
         mockDeleteServer.mockClear();
         mockAddToSshConfig.mockClear();
         mockRemoveFromSshConfig.mockClear();
+        mockEnsureIdentityInAgent.mockClear();
     });
 
     test("connects to selected server from manage flow", async () => {
@@ -110,6 +114,7 @@ describe("serversCommand", () => {
             "IdentitiesOnly=yes",
             "ubuntu@10.0.0.1",
         ]);
+        expect(mockEnsureIdentityInAgent).toHaveBeenCalledWith("/mock/key.pem", { interactive: true });
     });
 
     test("adds server using ssh agent auth", async () => {

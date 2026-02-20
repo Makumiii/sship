@@ -27,6 +27,7 @@ const mockSpawn = mock(() => {
         stderr: EventEmitter;
         stdin: { end: () => void; write: (chunk: string) => void };
         on: (event: string, cb: (...args: unknown[]) => void) => void;
+        emit: (event: string, ...args: unknown[]) => void;
         unref: () => void;
         pid?: number;
     };

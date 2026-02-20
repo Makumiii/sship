@@ -21,11 +21,11 @@ import {
 import type { ServerAuthMode, ServerConfig } from "../types/serverTypes.ts";
 import type { SelectChoice } from "../utils/select.ts";
 import {
-  defaultServerKeyPath,
   installPublicKeyOnServer,
   prepareBootstrapKey,
   verifyIdentityFileConnection,
 } from "../utils/serverBootstrap.ts";
+import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
 
 type ServerAction = "add" | "manage" | "back";
 
@@ -355,6 +355,13 @@ async function bootstrapPasswordlessFlow(selectedName?: string): Promise<void> {
     await updateSshConfig(updatedServer);
     logger.succeed(`Server "${server.name}" updated to identity_file auth.`);
 
+    const agentStatus = await ensureIdentityInAgent(finalIdentityFile, { interactive: true });
+    if (agentStatus === "added") {
+      logger.info(`Loaded key into ssh-agent: ${finalIdentityFile}`);
+    } else if (agentStatus === "failed") {
+      logger.warn(`Could not load key into ssh-agent automatically: ${finalIdentityFile}`);
+    }
+
     logger.start("Verifying key-based login...");
     const ok = await verifyIdentityFileConnection(updatedServer, finalIdentityFile);
     if (ok) {
@@ -391,6 +398,9 @@ async function connectServerFlow(selectedName?: string): Promise<void> {
   logger.succeed(`Connecting to ${server.name}...`);
   if (server.authMode === "password") {
     logger.info("Password auth selected. SSH may prompt you for password.");
+  }
+  if (server.authMode === "identity_file" && server.identityFile) {
+    await ensureIdentityInAgent(server.identityFile, { interactive: true });
   }
 
   try {
@@ -530,6 +540,9 @@ async function testConnectionFlow(selectedName?: string): Promise<void> {
   logger.start(`Testing connection to ${server.name}...`);
   if (server.authMode === "password") {
     logger.info("Password auth selected. SSH may prompt you for password.");
+  }
+  if (server.authMode === "identity_file" && server.identityFile) {
+    await ensureIdentityInAgent(server.identityFile, { interactive: true });
   }
 
   try {

@@ -52,7 +52,7 @@ const mockRegisterTransfer = mock(() => {});
 const mockRegisterTunnel = mock(() => {});
 const mockRegisterRestore = mock(() => {});
 
-const parseMock = mock(() => {});
+const parseMock = mock((_argv: string[]) => {});
 
 function mockCommonInteractiveDeps() {
     mock.module(selectPath, () => ({ select: mockSelect }));
@@ -89,13 +89,9 @@ function mockCliDeps() {
         },
     }));
 
-    mock.module("fs", async (importOriginal) => {
-        const original = await importOriginal();
-        return {
-            ...original,
-            readFileSync: () => JSON.stringify({ version: "0.0.0-test" }),
-        };
-    });
+    mock.module("fs", () => ({
+        readFileSync: () => JSON.stringify({ version: "0.0.0-test" }),
+    }));
 }
 
 describe("index entry flows", () => {

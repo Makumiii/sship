@@ -11,7 +11,7 @@ let spinner: Ora | null = null;
 async function ensureLogDirectoryExists() {
   try {
     await access(logDir, constants.F_OK);
-  } catch (e) {
+  } catch {
     await mkdir(logDir, { recursive: true });
   }
 }

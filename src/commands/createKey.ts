@@ -5,11 +5,14 @@ import { spawn } from "child_process";
 import { addServiceKey } from "../utils/serviceKeys.ts";
 import { resolveScriptPath } from "../utils/scriptPath.ts";
 import { select } from "../utils/select.ts";
+import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
 import {
   SERVICE_KEY_TEMPLATES,
   getServiceKeyTemplate,
   type ServiceKeyTemplate,
 } from "../utils/serviceKeyTemplates.ts";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 const basePromptMessages: UserPromptMessage[] = [
   {
@@ -145,8 +148,18 @@ export default async function createKeyCommand(options?: CreateKeyOptions) {
   });
   if (exitCode === 0) {
     logger.succeed("SSH key creation complete.");
-    if (typeof responses.name === "string" && responses.name.trim() !== "") {
-      await addServiceKey(responses.name.trim());
+    const keyName = typeof responses.name === "string" ? responses.name.trim() : "";
+    if (keyName !== "") {
+      await addServiceKey(keyName);
+      const keyPath = join(homedir(), ".ssh", keyName);
+      const agentStatus = await ensureIdentityInAgent(keyPath, { interactive: true });
+      if (agentStatus === "added") {
+        logger.info(`Loaded key into ssh-agent: ${keyPath}`);
+      } else if (agentStatus === "skipped_no_agent") {
+        logger.warn("SSH_AUTH_SOCK is not set; key was created but not loaded into ssh-agent.");
+      } else if (agentStatus === "failed") {
+        logger.warn(`Could not load key into ssh-agent automatically: ${keyPath}`);
+      }
     }
     if (selectedTemplate?.docsUrl) {
       logger.info(`Add your public key in ${selectedTemplate.label}: ${selectedTemplate.docsUrl}`);

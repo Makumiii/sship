@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from "fs";
 import { copyToClipboard } from "../utils/clipboard.ts";
 import { logger } from "../utils/logger.ts";
 import { spawn } from "child_process";
+import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
 
 type ServiceKeyAction = "create" | "list" | "back";
 
@@ -103,6 +104,15 @@ async function viewPublicKey(fullLocation: string, keyName: string): Promise<voi
 
 async function testServiceKeyConnection(alias: string): Promise<void> {
     logger.start(`Testing connection for "${alias}"...`);
+    const keyPath = `${homedir()}/.ssh/${alias}`;
+    const agentStatus = await ensureIdentityInAgent(keyPath, { interactive: true });
+    if (agentStatus === "added") {
+        logger.info(`Loaded key into ssh-agent: ${keyPath}`);
+    } else if (agentStatus === "skipped_no_agent") {
+        logger.warn("SSH_AUTH_SOCK is not set; key was not loaded into ssh-agent.");
+    } else if (agentStatus === "failed") {
+        logger.warn(`Could not load key into ssh-agent automatically: ${keyPath}`);
+    }
 
     const strictArgs = [
         "-T",
