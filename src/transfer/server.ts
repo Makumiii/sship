@@ -11,16 +11,6 @@ import type { ServerConfig } from "../types/serverTypes.ts";
 const PORT = 3847;
 const progressEmitter = new EventEmitter();
 
-// Debug Crash
-import { writeFileSync } from "fs";
-process.on('uncaughtException', (err) => {
-    writeFileSync('/tmp/sship_crash.log', `Uncaught Exception: ${err.message}\n${err.stack}\n`, { flag: 'a' });
-    process.exit(1);
-});
-process.on('unhandledRejection', (reason) => {
-    writeFileSync('/tmp/sship_crash.log', `Unhandled Rejection: ${String(reason)}\n`, { flag: 'a' });
-});
-
 interface FileInfo {
     name: string;
     isDir: boolean;
@@ -298,8 +288,15 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
 }
 
 export function startTransferServer(): Promise<void> {
-    return new Promise(resolve => {
-        createServer(handleRequest).listen(PORT, () => resolve());
+    return new Promise((resolve, reject) => {
+        const server = createServer(handleRequest);
+        const onError = (error: Error) => reject(error);
+
+        server.once("error", onError);
+        server.listen(PORT, () => {
+            server.off("error", onError);
+            resolve();
+        });
     });
 }
 export { PORT };

@@ -8,7 +8,15 @@
     "sship": "dist/index.js"
   },
   "scripts": {
-    "build": "bun build src/index.ts --outdir dist --target=node --external ssh2 --external ssh2-sftp-client && mkdir -p dist/public && cp src/transfer/public/* dist/public/"
+    "build": "bun build src/index.ts --outdir dist --target=node --external ssh2 --external ssh2-sftp-client && mkdir -p dist/public && cp src/transfer/public/* dist/public/",
+    "demo:prepare": "bash ./scripts/demo/setup-demo-home.sh",
+    "demo:record": "bash ./scripts/demo/record-interactive.sh",
+    "test": "BUN_TMPDIR=/tmp bun test",
+    "test:unit": "BUN_TMPDIR=/tmp bun test --coverage",
+    "test:integration": "BUN_TMPDIR=/tmp bun test ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/scriptPath.integration.ts",
+    "test:smoke": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts",
+    "test:all": "BUN_TMPDIR=/tmp bun test && BUN_TMPDIR=/tmp bun test ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/scriptPath.integration.ts && BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts",
+    "test:phase-regression": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts ./tests/backupCommand.test.ts ./tests/restoreCommand.test.ts ./tests/initCommand.integration.ts ./tests/logsCommand.integration.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",

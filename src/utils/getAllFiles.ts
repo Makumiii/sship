@@ -1,8 +1,16 @@
-import { readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 
 export function getAllFiles(location: string) {
-  const files = readdirSync(location)
-    .filter((file) => statSync(`${location}/${file}`).isFile())
-    .map((file) => file);
+  if (!existsSync(location)) {
+    return [];
+  }
+
+  const files = readdirSync(location).filter((file) => {
+    try {
+      return statSync(`${location}/${file}`).isFile();
+    } catch {
+      return false;
+    }
+  });
   return files;
 }

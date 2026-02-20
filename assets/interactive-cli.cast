@@ -1,0 +1,10 @@
+{"version": 2, "width": 80, "height": 24, "timestamp": 1771585027, "idle_time_limit": 1.2, "env": {"SHELL": "/usr/bin/zsh", "TERM": "dumb"}, "title": "SSHIP Interactive CLI"}
+[0.320132, "o", "? What do you want to do?\r\n❯ Service Keys\r\n  Server Connections (PEM)\r\n  Transfer Files (Synergy)\r\n  Tunnel Manager\r\n  Onboard Keys\r\n  Run Doctor\r\n  First Run Setup\r\n(Use arrow keys to reveal more choices)\u001b[?25l\u001b[40G"]
+[14.354858, "o", "\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G? What do you want to do?\r\n  Service Keys\r\n❯ Server Connections (PEM)\r\n  Transfer Files (Synergy)\r\n  Tunnel Manager\r\n  Onboard Keys\r\n  Run Doctor\r\n  First Run Setup\u001b[?25l\u001b[18G"]
+[14.357515, "o", "\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G✔ What do you want to do? Server Connections (PEM)\u001b[51G"]
+[14.359965, "o", "\r\n\u001b[?25h"]
+[14.363459, "o", "? Server Management: (Use arrow keys)\r\n❯ Add Server\r\n  Manage Servers\r\n  Back\u001b[?25l\u001b[7G"]
+[22.239494, "o", "\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G? Server Management:\r\n  Add Server\r\n❯ Manage Servers\r\n  Back\u001b[?25l\u001b[7G"]
+[22.241743, "o", "\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G? Server Management:\r\n  Add Server\r\n  Manage Servers\r\n❯ Back\u001b[?25l\u001b[7G"]
+[22.24295, "o", "\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[1A\u001b[2K\u001b[G✔ Server Management: Back\u001b[26G"]
+[22.243759, "o", "\r\n\u001b[?25h"]

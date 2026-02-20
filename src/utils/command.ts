@@ -1,17 +1,12 @@
 import { spawn } from "child_process";
 
-export async function runCommand(scriptPath: string, args: string[] = []) {
-    try {
-        const command = spawn(scriptPath, args, {
-        stdio: 'inherit',
-        });
-        await new Promise<void>((resolve, reject) => {
-            command.on('close', () => resolve());
-            command.on('error', reject);
-        });
-    } catch (error) {
-        console.error(`[SSHIP] Error executing command: ${error}`);
-        process.exit(1);
-    }
+export async function runCommand(scriptPath: string, args: string[] = []): Promise<number> {
+    const command = spawn(scriptPath, args, {
+        stdio: "inherit",
+    });
 
+    return await new Promise<number>((resolve) => {
+        command.on("close", (code) => resolve(code ?? 1));
+        command.on("error", () => resolve(1));
+    });
 }

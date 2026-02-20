@@ -4,11 +4,15 @@ import { registerCreateCommand } from "./cli-commands/create.ts";
 import { registerDeleteCommand } from "./cli-commands/delete.ts";
 import { registerListCommand } from "./cli-commands/list.ts";
 import { registerBackupCommand } from "./cli-commands/backup.ts";
+import { registerRestoreCommand } from "./cli-commands/restore.ts";
+import { registerInitCommand } from "./cli-commands/init.ts";
+import { registerLogsCommand } from "./cli-commands/logs.ts";
 import { registerUninstallCommand } from "./cli-commands/uninstall.ts";
 import { registerDoctorCommand } from "./cli-commands/doctor.ts";
 import { registerServersCommand } from "./cli-commands/servers.ts";
 import { registerTransferCommand } from "./cli-commands/transfer.ts";
 import { registerTunnelCommand } from "./cli-commands/tunnel.ts";
+import { registerOnboardCommand } from "./cli-commands/onboard.ts";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -19,6 +23,9 @@ import { ExitPromptError } from "@inquirer/core";
 import type { Tasks } from "./types.ts";
 import { runCommand } from "./utils/command.ts";
 import backupCommand from "./commands/backup.ts";
+import restoreCommand from "./commands/restore.ts";
+import initCommand from "./commands/init.ts";
+import logsCommand from "./commands/logs.ts";
 import doctorCommand from "./commands/doctor.ts";
 import onboardCommand from "./commands/onboard.ts";
 import { serversCommand } from "./commands/servers.ts";
@@ -46,13 +53,25 @@ if (hasArgs) {
     registerDeleteCommand(program);
     registerListCommand(program);
     registerBackupCommand(program);
+    registerRestoreCommand(program);
+    registerInitCommand(program);
+    registerLogsCommand(program);
     registerUninstallCommand(program);
     registerDoctorCommand(program);
+    registerOnboardCommand(program);
     registerServersCommand(program);
     registerTransferCommand(program);
     registerTunnelCommand(program);
 
-    program.parse(process.argv);
+    try {
+        await program.parseAsync(process.argv);
+    } catch (error) {
+        if (error instanceof ExitPromptError) {
+            logger.info("\n[SSHIP] Aborted. Exiting gracefully.");
+            process.exit(130);
+        }
+        throw error;
+    }
 } else {
     // Interactive mode - show menu
     const menuChoices: SelectChoice<Tasks>[] = [
@@ -62,7 +81,10 @@ if (hasArgs) {
         { name: "Tunnel Manager", value: "tunnel" },
         { name: "Onboard Keys", value: "onboard" },
         { name: "Run Doctor", value: "doctor" },
+        { name: "First Run Setup", value: "init" },
         { name: "Backup Keys", value: "backup" },
+        { name: "Restore Keys", value: "restore" },
+        { name: "View Logs", value: "logs" },
         { name: "Uninstall SSHIP", value: "uninstall" },
         { name: "Exit", value: "exit" },
     ];
@@ -77,6 +99,18 @@ if (hasArgs) {
             }
             case "backup": {
                 await backupCommand();
+                break;
+            }
+            case "restore": {
+                await restoreCommand();
+                break;
+            }
+            case "init": {
+                await initCommand({ fix: true });
+                break;
+            }
+            case "logs": {
+                await logsCommand();
                 break;
             }
             case "uninstall": {

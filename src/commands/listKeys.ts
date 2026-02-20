@@ -11,6 +11,11 @@ const fullLocation = `${location}/.ssh`;
 
 export default async function listKeysCommand() {
   const storedKeys = await loadServiceKeys();
+  if (!existsSync(fullLocation)) {
+    logger.info("No keys found");
+    return;
+  }
+
   const files = getAllFiles(fullLocation);
   const pairNames = storedKeys.filter((key) =>
     files.some((file) => file === key || file === `${key}.pub`)
@@ -27,6 +32,10 @@ export default async function listKeysCommand() {
     logger.info(`${i}. ${key}`);
     i++;
   });
+
+  if (!process.stdin.isTTY) {
+    return;
+  }
 
   // Ask if user wants to view a public key
   const validKeys = pairNames.filter((key): key is string => key !== undefined);

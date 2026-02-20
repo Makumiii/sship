@@ -32,6 +32,10 @@ async function manageServiceKeyEntries(): Promise<void> {
     const location = homedir();
     const fullLocation = `${location}/.ssh`;
     const storedKeys = await loadServiceKeys();
+    if (!existsSync(fullLocation)) {
+        logger.info("No service keys found");
+        return;
+    }
     const files = getAllFiles(fullLocation);
     const keys = storedKeys.filter((key) =>
         files.some((file) => file === key || file === `${key}.pub`)

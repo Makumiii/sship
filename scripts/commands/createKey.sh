@@ -38,6 +38,10 @@ if [ -z "${HOST}" ] || [ "${HOST}" = "null" ]; then
     exit 1
 fi
 
+# Ensure first-run environments have a usable ~/.ssh directory.
+mkdir -p "$HOME/.ssh"
+chmod 700 "$HOME/.ssh"
+
 ssh-keygen -t ed25519 -C "${EMAIL}" -N "${PASSPHRASE}" -f ~/".ssh/${NAME}"
 echo "SSH key creation complete."
 

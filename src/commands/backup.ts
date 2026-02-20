@@ -2,15 +2,19 @@ import { logger } from "../utils/logger.ts";
 import { promptUser } from "../utils/prompt";
 import { homedir } from "node:os";
 import { readdir, copyFile, mkdtemp } from "fs/promises";
+import { existsSync } from "node:fs";
 import { tmpdir } from "os";
 import { runCommand } from "../utils/command";
-import { basename, join } from "path";
+import { basename } from "path";
+import { resolveScriptPath } from "../utils/scriptPath.ts";
 
 const location = `${homedir()}/.ssh`;
 
 export default async function backupCommand(options?: { passphrase?: string }) {
+    const hasPassphraseOption = Boolean(options) &&
+        Object.prototype.hasOwnProperty.call(options, "passphrase");
     let passphrase = options?.passphrase;
-    if (!passphrase) {
+    if (!hasPassphraseOption) {
         const encryptionKey = await promptUser([{ id: "passphrase", message: "Enter a passphrase for encryption (leave blank to skip):" }]);
         passphrase = encryptionKey.passphrase;
     }
@@ -19,16 +23,29 @@ export default async function backupCommand(options?: { passphrase?: string }) {
     const tempDirLocation = tmpdir();
     const privTempDir = await mkdtemp(`${tempDirLocation}/sship-backup-`);
 
-    const backupTerms = ["id", "config", "known_hosts", "authorized_keys", ".pem", ".pub"];
+    if (!existsSync(location)) {
+        logger.succeed("No files found in ~/.ssh to back up.");
+        return;
+    }
+
     logger.start(`Reading SSH directory: ${location}`);
-    const items = await readdir(location, { withFileTypes: true });
+    let items: Awaited<ReturnType<typeof readdir>>;
+    try {
+        items = await readdir(location, { withFileTypes: true });
+    } catch (error) {
+        const errno = error as NodeJS.ErrnoException;
+        if (errno.code === "ENOENT") {
+            logger.succeed("No files found in ~/.ssh to back up.");
+            return;
+        }
+        throw error;
+    }
     const files = items
-        .filter((item) => item.isFile)
-        .map((item) => item.name)
-        .filter((file) => backupTerms.some((term) => file.includes(term)));
+        .filter((item) => item.isFile())
+        .map((item) => item.name);
 
     if (files.length === 0) {
-        logger.succeed("No files found matching backup terms.");
+        logger.succeed("No files found in ~/.ssh to back up.");
         return;
     }
 
@@ -41,9 +58,13 @@ export default async function backupCommand(options?: { passphrase?: string }) {
         await copyFile(singleFileWithPath, destPath);
     }
 
-    const pathToScript = join(import.meta.dirname, "../../scripts/commands/backup.sh");
+    const pathToScript = resolveScriptPath(import.meta.dirname, "commands/backup.sh");
     const args = [privTempDir, passphrase || ""];
 
-    await runCommand(pathToScript, args);
+    const code = await runCommand(pathToScript, args);
+    if (code !== 0) {
+        logger.fail("Backup process failed.");
+        return;
+    }
     logger.succeed("Backup process completed.");
 }

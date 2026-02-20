@@ -1,7 +1,7 @@
-import { readFile, writeFile, mkdir } from "fs/promises";
-import { homedir } from "os";
-import { existsSync } from "fs";
-import { join } from "path";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import type { TunnelConfig, TunnelsFile } from "../types/tunnelTypes.ts";
 
 const SSHIP_DIR = join(homedir(), ".sship");

@@ -238,12 +238,16 @@ async function connectServerFlow(selectedName?: string): Promise<void> {
     logger.succeed(`Connecting to ${server.name}...`);
 
     // Use IdentitiesOnly to avoid SSH agent trying all keys
-    await runCommand("ssh", [
+    const code = await runCommand("ssh", [
         "-i", server.pemKeyPath,
         "-p", String(server.port),
         "-o", "IdentitiesOnly=yes",
         `${server.user}@${server.host}`,
     ]);
+
+    if (code !== 0) {
+        logger.fail(`Connection to ${server.name} failed`);
+    }
 }
 
 async function editServerFlow(selectedName?: string): Promise<void> {
@@ -373,7 +377,7 @@ async function testConnectionFlow(selectedName?: string): Promise<void> {
     logger.start(`Testing connection to ${server.name}...`);
 
     try {
-        await runCommand("ssh", [
+        const code = await runCommand("ssh", [
             "-i", server.pemKeyPath,
             "-p", String(server.port),
             "-o", "IdentitiesOnly=yes",
@@ -382,7 +386,12 @@ async function testConnectionFlow(selectedName?: string): Promise<void> {
             `${server.user}@${server.host}`,
             "echo 'Connection successful!'",
         ]);
-        logger.succeed(`Connection to ${server.name} successful!`);
+
+        if (code === 0) {
+            logger.succeed(`Connection to ${server.name} successful!`);
+        } else {
+            logger.fail(`Connection to ${server.name} failed`);
+        }
     } catch {
         logger.fail(`Connection to ${server.name} failed`);
     }
