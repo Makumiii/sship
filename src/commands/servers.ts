@@ -1,4 +1,4 @@
-import { input } from "@inquirer/prompts";
+import { input, password } from "@inquirer/prompts";
 import { existsSync, readdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
@@ -20,6 +20,12 @@ import {
 } from "../utils/sshConfig.ts";
 import type { ServerAuthMode, ServerConfig } from "../types/serverTypes.ts";
 import type { SelectChoice } from "../utils/select.ts";
+import {
+  defaultServerKeyPath,
+  installPublicKeyOnServer,
+  prepareBootstrapKey,
+  verifyIdentityFileConnection,
+} from "../utils/serverBootstrap.ts";
 
 type ServerAction = "add" | "manage" | "back";
 
@@ -238,6 +244,7 @@ async function manageServersFlow(): Promise<void> {
   const actionChoices: SelectChoice<string>[] = [
     { name: "Connect", value: "connect" },
     { name: "Test Connection", value: "test" },
+    { name: "Setup Passwordless Login", value: "bootstrap" },
     { name: "Edit", value: "edit" },
     { name: "Delete", value: "delete" },
     { name: "Back", value: "back" },
@@ -256,9 +263,108 @@ async function manageServersFlow(): Promise<void> {
     case "edit":
       await editServerFlow(server.name);
       break;
+    case "bootstrap":
+      await bootstrapPasswordlessFlow(server.name);
+      break;
     case "delete":
       await deleteServerFlow(server.name);
       break;
+  }
+}
+
+async function bootstrapPasswordlessFlow(selectedName?: string): Promise<void> {
+  const servers = await loadServers();
+  if (servers.length === 0) {
+    logger.fail("No servers configured.");
+    return;
+  }
+
+  let resolvedName = selectedName;
+  if (!resolvedName) {
+    const serverNames = servers.map((s) => s.name);
+    resolvedName = await select<string>("Select server to bootstrap:", serverNames);
+  }
+
+  const server = resolvedName ? await getServer(resolvedName) : null;
+  if (!server) {
+    logger.fail(`Server "${resolvedName}" not found`);
+    return;
+  }
+
+  logger.info(`Bootstrapping passwordless SSH for ${server.user}@${server.host}`);
+  if (server.authMode !== "password") {
+    logger.warn(`Server "${server.name}" is currently "${server.authMode}". Continuing bootstrap anyway.`);
+  }
+
+  const keySource = await select<"new" | "existing" | "back">("Key source:", [
+    { name: "Create new key pair", value: "new" },
+    { name: "Use existing private key", value: "existing" },
+    { name: "Back", value: "back" },
+  ]);
+  if (keySource === "back") return;
+
+  try {
+    let newKeyName: string | undefined;
+    let existingKeyPath: string | undefined;
+    let passphrase: string | undefined;
+
+    if (keySource === "new") {
+      const defaultName = `${server.name}_key`;
+      const keyName = await input({
+        message: "Key name (will be created in ~/.ssh):",
+        default: defaultName,
+      });
+      if (!keyName.trim()) {
+        logger.fail("Key name is required.");
+        return;
+      }
+      newKeyName = keyName.trim();
+      passphrase = await password({
+        message: "Passphrase for new key (optional):",
+        mask: "*",
+      });
+    } else {
+      const keyPath = await input({ message: "Path to existing private key:" });
+      if (!keyPath.trim()) {
+        logger.fail("Private key path is required.");
+        return;
+      }
+      existingKeyPath = keyPath.trim();
+    }
+
+    logger.start("Preparing key material...");
+    const prepared = await prepareBootstrapKey(server, { newKeyName, existingKeyPath, passphrase });
+    logger.succeed("Key material ready.");
+
+    logger.start("Installing public key on remote server (password prompt expected)...");
+    await installPublicKeyOnServer(server, prepared.publicKeyPath);
+    logger.succeed("Public key installed on remote server.");
+
+    let finalIdentityFile = prepared.privateKeyPath;
+    if (!finalIdentityFile.startsWith(join(homedir(), ".ssh"))) {
+      finalIdentityFile = await copyIdentityToSsh(finalIdentityFile, server.name);
+      logger.info(`Private key copied to: ${finalIdentityFile}`);
+    }
+
+    const updatedServer: ServerConfig = {
+      ...server,
+      authMode: "identity_file",
+      identityFile: finalIdentityFile,
+    };
+    await updateServer(server.name, updatedServer);
+    await updateSshConfig(updatedServer);
+    logger.succeed(`Server "${server.name}" updated to identity_file auth.`);
+
+    logger.start("Verifying key-based login...");
+    const ok = await verifyIdentityFileConnection(updatedServer, finalIdentityFile);
+    if (ok) {
+      logger.succeed(`Passwordless SSH is ready for "${server.name}".`);
+    } else {
+      logger.warn("Key-based verification failed. Try loading key into agent if passphrase-protected:");
+      logger.info(`ssh-add ${finalIdentityFile}`);
+    }
+  } catch (error) {
+    logger.fail(`Bootstrap failed: ${error}`);
   }
 }
 

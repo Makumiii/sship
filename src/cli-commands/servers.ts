@@ -9,9 +9,15 @@ import {
   deleteServer,
   getServer,
   loadServers,
+  updateServer,
 } from "../utils/serverStorage.ts";
-import { addToSshConfig, removeFromSshConfig } from "../utils/sshConfig.ts";
+import { addToSshConfig, removeFromSshConfig, updateSshConfig } from "../utils/sshConfig.ts";
 import type { ServerAuthMode, ServerConfig } from "../types/serverTypes.ts";
+import {
+  installPublicKeyOnServer,
+  prepareBootstrapKey,
+  verifyIdentityFileConnection,
+} from "../utils/serverBootstrap.ts";
 
 function buildSshArgs(server: ServerConfig, mode: "connect" | "test"): string[] {
   const args: string[] = ["-p", String(server.port), "-o", "ConnectTimeout=10"];
@@ -45,7 +51,7 @@ export function registerServersCommand(program: Command) {
     .description("Manage server connections")
     .addHelpText(
       "after",
-      "\nExamples:\n  sship servers list\n  sship servers add -n prod -H 10.0.0.10 -u ubuntu --auth identity_file -k ~/.ssh/prod_key\n  sship servers add -n homelab -H 192.168.100.189 -u maks --auth ssh_agent\n  sship servers add -n homelab-pass -H 192.168.100.189 -u maks --auth password\n  sship servers test prod\n  sship servers delete prod --yes\n"
+      "\nExamples:\n  sship servers list\n  sship servers add -n prod -H 10.0.0.10 -u ubuntu --auth identity_file -k ~/.ssh/prod_key\n  sship servers add -n homelab -H 192.168.100.189 -u maks --auth ssh_agent\n  sship servers add -n homelab-pass -H 192.168.100.189 -u maks --auth password\n  sship servers bootstrap-key homelab-pass --new-key homelab_key\n  sship servers test prod\n  sship servers delete prod --yes\n"
     );
 
   servers.action(async () => {
@@ -141,6 +147,69 @@ export function registerServersCommand(program: Command) {
         logger.succeed(`Server \"${server.name}\" added successfully!`);
       } catch (error) {
         logger.fail(`Failed to add server: ${error}`);
+      }
+    });
+
+  servers
+    .command("bootstrap-key <name>")
+    .description("Install public key on server and switch profile to identity_file auth")
+    .option("--new-key <keyName>", "Create new key in ~/.ssh/<keyName>")
+    .option("--existing-key <path>", "Use existing private key path")
+    .option("--passphrase <passphrase>", "Passphrase for --new-key (optional, default empty)")
+    .option("--no-copy", "Use key path as-is (do not copy into ~/.ssh)")
+    .action(async (name: string, options: { newKey?: string; existingKey?: string; passphrase?: string; copy: boolean }) => {
+      const server = await getServer(name);
+      if (!server) {
+        logger.fail(`Server "${name}" not found`);
+        return;
+      }
+
+      if (!options.newKey && !options.existingKey) {
+        logger.fail("Provide one: --new-key <name> or --existing-key <path>");
+        return;
+      }
+      if (options.newKey && options.existingKey) {
+        logger.fail("Use either --new-key or --existing-key, not both.");
+        return;
+      }
+
+      try {
+        logger.start("Preparing key material...");
+        const prepared = await prepareBootstrapKey(server, {
+          newKeyName: options.newKey,
+          existingKeyPath: options.existingKey,
+          passphrase: options.passphrase,
+        });
+        logger.succeed("Key material ready.");
+
+        logger.start("Installing public key on remote server (password prompt expected)...");
+        await installPublicKeyOnServer(server, prepared.publicKeyPath);
+        logger.succeed("Public key installed on remote server.");
+
+        let finalIdentity = prepared.privateKeyPath;
+        if (options.copy) {
+          finalIdentity = await copyIdentityToSsh(prepared.privateKeyPath, server.name);
+          logger.info(`Private key copied to: ${finalIdentity}`);
+        }
+
+        const updatedServer: ServerConfig = {
+          ...server,
+          authMode: "identity_file",
+          identityFile: finalIdentity,
+        };
+        await updateServer(server.name, updatedServer);
+        await updateSshConfig(updatedServer);
+        logger.succeed(`Server "${server.name}" updated to identity_file auth.`);
+
+        logger.start("Verifying key-based login...");
+        const ok = await verifyIdentityFileConnection(updatedServer, finalIdentity);
+        if (ok) {
+          logger.succeed(`Passwordless SSH is ready for "${server.name}".`);
+        } else {
+          logger.warn("Key-based verification failed. If key has passphrase, load it into agent.");
+        }
+      } catch (error) {
+        logger.fail(`Bootstrap failed: ${error}`);
       }
     });
 

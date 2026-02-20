@@ -18,6 +18,10 @@ interface FileInfo {
 }
 
 function buildRemoteSshArgs(server: ServerConfig, command: string): string[] {
+    if (server.authMode === "password") {
+        throw new Error("Password-auth servers are not supported in Transfer yet. Use identity_file or ssh_agent.");
+    }
+
     const args = [
         "-p",
         String(server.port),
