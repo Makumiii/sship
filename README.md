@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <img src="./assets/interactive-cli.gif" alt="SSHIP interactive CLI demo" width="780" />
+  <video src="./assets/sship-demo.mp4" width="780" autoplay loop muted playsinline></video>
 </p>
 
 **SSHIP** is an interactive SSH workflow app.
