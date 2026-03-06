@@ -25,8 +25,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "npm run typecheck && npm run lint",
-    "demo:prepare": "bash ./scripts/demo/setup-demo-home.sh",
-    "demo:record": "bash ./scripts/demo/record-interactive.sh",
     "test": "BUN_TMPDIR=/tmp bun test",
     "test:unit": "BUN_TMPDIR=/tmp bun test --coverage",
     "test:integration": "BUN_TMPDIR=/tmp bun test ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/scriptPath.integration.ts",

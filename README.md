@@ -1,11 +1,13 @@
 # SSHIP
 
 <p align="center">
-  <img src="./assets/sship-logo.png" alt="SSHIP logo" width="780" />
+  <img src="./assets/sship-logo.svg" alt="SSHIP logo" width="780" />
 </p>
 
 <p align="center">
-  <video src="./assets/sship-demo.mp4" width="780" autoplay loop muted playsinline></video>
+  <a href="./assets/sship-demo.mp4">
+    <img src="./assets/sship-demo.gif" alt="SSHIP demo" width="780" />
+  </a>
 </p>
 
 **SSHIP** is an interactive SSH workflow app.
