@@ -14,6 +14,8 @@ import {
 } from "../utils/serviceKeyTemplates.ts";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { readFile } from "node:fs/promises";
+import { copyToClipboard } from "../utils/clipboard.ts";
 
 const basePromptMessages: UserPromptMessage[] = [
   {
@@ -161,6 +163,22 @@ export default async function createKeyCommand(options?: CreateKeyOptions) {
         logger.warn("SSH_AUTH_SOCK is not set; key was created but not loaded into ssh-agent.");
       } else if (agentStatus === "failed") {
         logger.warn(`Could not load key into ssh-agent automatically: ${keyPath}`);
+      }
+    }
+    if (keyName !== "") {
+      try {
+        const pubKeyPath = join(homedir(), ".ssh", `${keyName}.pub`);
+        const pubKeyContent = await readFile(pubKeyPath, "utf-8");
+        logger.info(`\nYour public key is:\n\n${pubKeyContent.trim()}\n`);
+        
+        const copied = copyToClipboard(pubKeyContent.trim());
+        if (copied) {
+          logger.succeed("Public key copied to clipboard!");
+        } else {
+          logger.info("Could not copy to clipboard automatically. Please copy the key above.");
+        }
+      } catch (err) {
+        logger.warn("Could not read or copy public key automatically.");
       }
     }
     if (selectedTemplate?.docsUrl) {
