@@ -21,6 +21,7 @@ export interface SshConfigEntry {
 
 export type DoctorOptions = {
   fixAll?: boolean;
+  fixShell?: boolean;
 };
 
 export async function parseSshConfig(): Promise<SshConfigEntry[]> {
@@ -145,12 +146,23 @@ async function checkTunnelRegistry(fixAll: boolean): Promise<void> {
 
 export default async function doctorCommand(options?: DoctorOptions) {
   const fixAll = Boolean(options?.fixAll);
+  const fixShell = Boolean(options?.fixShell);
   logger.start("Running SSH config doctor...");
 
   if (fixAll) {
     await ensureJsonFile(serviceKeysPath, JSON.stringify({ keys: [] }, null, 2));
     await ensureJsonFile(serversPath, JSON.stringify({ servers: [] }, null, 2));
     await ensureJsonFile(tunnelsPath, JSON.stringify({ tunnels: [] }, null, 2));
+  }
+
+  if (fixShell) {
+    const { removeManagedAgentShellHooks } = await import("../utils/agentManager.ts");
+    const removedFrom = await removeManagedAgentShellHooks();
+    if (removedFrom.length > 0) {
+      logger.info(`Removed managed shell hooks from: ${removedFrom.join(", ")}`);
+    } else {
+      logger.info("No managed shell hooks found in shell startup files.");
+    }
   }
 
   const configEntries = await parseSshConfig();

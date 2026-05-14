@@ -23,7 +23,7 @@ mock.module(promptPath, () => ({ promptUser: mockPromptUser }));
 mock.module(commandPath, () => ({ runCommand: mockRunCommand }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
 mock.module("node:os", () => ({ homedir: () => "/mock/home", tmpdir: () => "/tmp" }));
-mock.module("node:fs", () => ({ existsSync: mockExistsSync }));
+mock.module("node:fs", () => ({ existsSync: mockExistsSync, constants: { F_OK: 0 } }));
 mock.module("fs/promises", () => ({
     readdir: mockReaddir,
     copyFile: mockCopyFile,

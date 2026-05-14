@@ -8,11 +8,24 @@ export type EnsureIdentityInAgentStatus =
   | "skipped_non_interactive"
   | "failed";
 
-function runWithCapture(command: string, args: string[]): Promise<{ code: number; stdout: string; stderr: string }> {
+function runWithCapture(
+  command: string,
+  args: string[],
+  options?: { timeoutMs?: number }
+): Promise<{ code: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { stdio: ["ignore", "pipe", "pipe"] });
     let stdout = "";
     let stderr = "";
+    const timeoutMs = options?.timeoutMs ?? 5000;
+    const timeout = setTimeout(() => {
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        // ignore
+      }
+      resolve({ code: 124, stdout, stderr: `${stderr}\nTimed out` });
+    }, timeoutMs);
 
     child.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
@@ -21,9 +34,13 @@ function runWithCapture(command: string, args: string[]): Promise<{ code: number
       stderr += chunk.toString();
     });
     child.on("close", (code) => {
+      clearTimeout(timeout);
       resolve({ code: code ?? 1, stdout, stderr });
     });
-    child.on("error", reject);
+    child.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
   });
 }
 
@@ -36,7 +53,7 @@ function runWithInherit(command: string, args: string[]): Promise<number> {
 }
 
 async function keyAlreadyLoaded(publicKeyPath: string): Promise<boolean> {
-  const testResult = await runWithCapture("ssh-add", ["-T", publicKeyPath]);
+  const testResult = await runWithCapture("ssh-add", ["-T", publicKeyPath], { timeoutMs: 3000 });
   if (testResult.code === 0) {
     return true;
   }

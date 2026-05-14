@@ -43,9 +43,10 @@ BEGIN { skip=0 }
 mv "$TMP_FILE" "$PATH_TO_CONF/$CONF_FILE"
 
 cat <<EOF >> "$PATH_TO_CONF/$CONF_FILE"
-Host $HOST_ALIAS
+Host $HOST_ALIAS $HOST
     HostName $HOST
     User $MACHINE_USER
     IdentityFile $IDENTITY_FILE
+    AddKeysToAgent yes
 EOF
-echo "SSH configuration for $HOST_ALIAS added to $PATH_TO_CONF/$CONF_FILE"
+echo "SSH configuration for $HOST_ALIAS ($HOST) added to $PATH_TO_CONF/$CONF_FILE"

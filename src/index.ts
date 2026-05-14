@@ -12,6 +12,7 @@ import { registerDoctorCommand } from "./cli-commands/doctor.ts";
 import { registerServersCommand } from "./cli-commands/servers.ts";
 import { registerTransferCommand } from "./cli-commands/transfer.ts";
 import { registerTunnelCommand } from "./cli-commands/tunnel.ts";
+import { registerAgentCommand } from "./cli-commands/agent.ts";
 import { registerOnboardCommand } from "./cli-commands/onboard.ts";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -32,6 +33,7 @@ import { serversCommand } from "./commands/servers.ts";
 import { transferCommand } from "./commands/transfer.ts";
 import { tunnelCommand } from "./commands/tunnel.ts";
 import { manageServiceKeys } from "./commands/serviceKeys.ts";
+import agentCommand from "./commands/agent.ts";
 
 const packageJson = JSON.parse(
     readFileSync(join(import.meta.dirname, "../package.json"), "utf-8")
@@ -62,6 +64,7 @@ if (hasArgs) {
     registerServersCommand(program);
     registerTransferCommand(program);
     registerTunnelCommand(program);
+    registerAgentCommand(program);
 
     try {
         await program.parseAsync(process.argv);
@@ -79,6 +82,7 @@ if (hasArgs) {
         { name: "Server Connections", value: "servers" },
         { name: "Transfer Files (Synergy)", value: "transfer" },
         { name: "Tunnel Manager", value: "tunnel" },
+        { name: "Agent Health", value: "agent" },
         { name: "Onboard Keys", value: "onboard" },
         { name: "Run Doctor", value: "doctor" },
         { name: "First Run Setup", value: "init" },
@@ -136,6 +140,10 @@ if (hasArgs) {
             }
             case "tunnel": {
                 await tunnelCommand();
+                break;
+            }
+            case "agent": {
+                await agentCommand({ fix: true });
                 break;
             }
             case "exit": {

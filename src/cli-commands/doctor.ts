@@ -8,7 +8,8 @@ export function registerDoctorCommand(program: Command) {
       "Checks SSH config for missing key files and offers to clean up.",
     )
     .option("--fix-all", "Automatically fix common issues without prompts")
-    .action(async (options: { fixAll?: boolean }) => {
+    .option("--fix-shell", "Remove managed ssh-agent hooks from shell startup files")
+    .action(async (options: { fixAll?: boolean; fixShell?: boolean }) => {
       await doctorCommand(options);
     });
 }

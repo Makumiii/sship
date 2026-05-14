@@ -19,6 +19,7 @@ import {
   verifyIdentityFileConnection,
 } from "../utils/serverBootstrap.ts";
 import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
+import { ensureManagedAgent } from "../utils/agentManager.ts";
 
 function buildSshArgs(server: ServerConfig, mode: "connect" | "test"): string[] {
   const args: string[] = ["-p", String(server.port), "-o", "ConnectTimeout=10"];
@@ -202,6 +203,7 @@ export function registerServersCommand(program: Command) {
         await updateSshConfig(updatedServer);
         logger.succeed(`Server "${server.name}" updated to identity_file auth.`);
 
+        await ensureManagedAgent();
         const agentStatus = await ensureIdentityInAgent(finalIdentity, { interactive: true });
         if (agentStatus === "added") {
           logger.info(`Loaded key into ssh-agent: ${finalIdentity}`);
@@ -254,6 +256,7 @@ export function registerServersCommand(program: Command) {
         logger.info("Password auth selected. SSH may prompt you for password.");
       }
       if (server.authMode === "identity_file" && server.identityFile) {
+        await ensureManagedAgent();
         await ensureIdentityInAgent(server.identityFile, { interactive: true });
       }
       let args: string[];
@@ -291,6 +294,7 @@ export function registerServersCommand(program: Command) {
       let args: string[];
       try {
         if (server.authMode === "identity_file" && server.identityFile) {
+          await ensureManagedAgent();
           await ensureIdentityInAgent(server.identityFile, { interactive: true });
         }
         args = buildSshArgs(server, "connect");

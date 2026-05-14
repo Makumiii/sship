@@ -46,7 +46,11 @@ const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
 
 mock.module(promptPath, () => ({ promptUser: mockPromptUser }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
-mock.module("node:child_process", () => ({ spawn: mockSpawn }));
+mock.module("node:child_process", () => ({
+  spawn: mockSpawn,
+  spawnSync: mock(() => ({ status: 1, stdout: "", stderr: "" })),
+  execSync: mock(() => ""),
+}));
 mock.module("node:os", () => ({ homedir: () => "/mock/home", tmpdir: () => "/tmp" }));
 mock.module("node:fs", () => ({ existsSync: mockExistsSync }));
 mock.module("node:fs/promises", () => ({

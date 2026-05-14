@@ -6,6 +6,7 @@ import { addServiceKey } from "../utils/serviceKeys.ts";
 import { resolveScriptPath } from "../utils/scriptPath.ts";
 import { select } from "../utils/select.ts";
 import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
+import { ensureManagedAgent } from "../utils/agentManager.ts";
 import {
   SERVICE_KEY_TEMPLATES,
   getServiceKeyTemplate,
@@ -152,6 +153,7 @@ export default async function createKeyCommand(options?: CreateKeyOptions) {
     if (keyName !== "") {
       await addServiceKey(keyName);
       const keyPath = join(homedir(), ".ssh", keyName);
+      await ensureManagedAgent();
       const agentStatus = await ensureIdentityInAgent(keyPath, { interactive: true });
       if (agentStatus === "added") {
         logger.info(`Loaded key into ssh-agent: ${keyPath}`);

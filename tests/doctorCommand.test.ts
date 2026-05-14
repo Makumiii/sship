@@ -45,7 +45,7 @@ mock.module(tunnelStoragePath, () => ({
     clearDeadPids: mockClearDeadPids,
 }));
 mock.module("node:os", () => ({ homedir: () => "/mock/home" }));
-mock.module("node:fs", () => ({ existsSync: mockExistsSync }));
+mock.module("node:fs", () => ({ existsSync: mockExistsSync, constants: { F_OK: 0 } }));
 mock.module("node:fs/promises", () => ({
     readFile: mockReadFile,
     access: mockAccess,

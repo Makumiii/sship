@@ -8,6 +8,7 @@ import Client from "ssh2-sftp-client";
 import { loadServers, getServer } from "../utils/serverStorage.ts";
 import type { ServerConfig } from "../types/serverTypes.ts";
 import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
+import { ensureManagedAgent } from "../utils/agentManager.ts";
 
 const DEFAULT_PORT = 3847;
 let activePort = DEFAULT_PORT;
@@ -121,6 +122,7 @@ async function listRemoteFiles(server: ServerConfig, remotePath: string): Promis
 }
 
 async function connectSftpWithServerAuth(sftp: Client, server: ServerConfig): Promise<void> {
+    await ensureManagedAgent();
     if (server.authMode === "password") {
         throw new Error("Password-auth servers are not supported in Transfer yet. Use identity_file or ssh_agent.");
     }

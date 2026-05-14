@@ -26,6 +26,7 @@ import {
   verifyIdentityFileConnection,
 } from "../utils/serverBootstrap.ts";
 import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
+import { ensureManagedAgent } from "../utils/agentManager.ts";
 
 type ServerAction = "add" | "manage" | "back";
 
@@ -355,6 +356,7 @@ async function bootstrapPasswordlessFlow(selectedName?: string): Promise<void> {
     await updateSshConfig(updatedServer);
     logger.succeed(`Server "${server.name}" updated to identity_file auth.`);
 
+    await ensureManagedAgent();
     const agentStatus = await ensureIdentityInAgent(finalIdentityFile, { interactive: true });
     if (agentStatus === "added") {
       logger.info(`Loaded key into ssh-agent: ${finalIdentityFile}`);
@@ -396,6 +398,7 @@ async function connectServerFlow(selectedName?: string): Promise<void> {
   }
 
   logger.succeed(`Connecting to ${server.name}...`);
+  await ensureManagedAgent();
   if (server.authMode === "password") {
     logger.info("Password auth selected. SSH may prompt you for password.");
   }
@@ -538,6 +541,7 @@ async function testConnectionFlow(selectedName?: string): Promise<void> {
   }
 
   logger.start(`Testing connection to ${server.name}...`);
+  await ensureManagedAgent();
   if (server.authMode === "password") {
     logger.info("Password auth selected. SSH may prompt you for password.");
   }

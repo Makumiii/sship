@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { chmod, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { logger } from "../utils/logger.ts";
+import { ensureManagedAgent, installManagedAgentAutostart } from "../utils/agentManager.ts";
 
 type InitOptions = {
   fix?: boolean;
@@ -109,6 +110,27 @@ export default async function initCommand(options?: InitOptions): Promise<void> 
     if (!existsSync(sshipDir)) {
       await ensureDir(sshipDir);
       logger.info("Created ~/.sship directory.");
+    }
+    const { startedAgent, status } = await ensureManagedAgent();
+    if (startedAgent) {
+      logger.info("Started managed ssh-agent.");
+    }
+    if (status.running) {
+      logger.info(`Managed ssh-agent ready at ${status.socketPath}.`);
+    } else {
+      logger.warn("Managed ssh-agent could not be validated. SSH operations may still require manual setup.");
+    }
+
+    const autostart = await installManagedAgentAutostart();
+    if (autostart.shellHook) {
+      logger.info("Installed shell hook for managed ssh-agent auto-heal.");
+    } else {
+      logger.warn("Could not install shell hook for managed agent (best-effort step).");
+    }
+    if (autostart.service) {
+      logger.info("Installed/enabled user service for managed ssh-agent bootstrap.");
+    } else {
+      logger.warn("Could not enable systemd user service for managed agent bootstrap (best-effort step).");
     }
   }
 

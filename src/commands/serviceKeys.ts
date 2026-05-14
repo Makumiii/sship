@@ -10,6 +10,7 @@ import { copyToClipboard } from "../utils/clipboard.ts";
 import { logger } from "../utils/logger.ts";
 import { spawn } from "child_process";
 import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
+import { ensureManagedAgent } from "../utils/agentManager.ts";
 
 type ServiceKeyAction = "create" | "list" | "back";
 
@@ -105,6 +106,7 @@ async function viewPublicKey(fullLocation: string, keyName: string): Promise<voi
 async function testServiceKeyConnection(alias: string): Promise<void> {
     logger.start(`Testing connection for "${alias}"...`);
     const keyPath = `${homedir()}/.ssh/${alias}`;
+    await ensureManagedAgent();
     const agentStatus = await ensureIdentityInAgent(keyPath, { interactive: true });
     if (agentStatus === "added") {
         logger.info(`Loaded key into ssh-agent: ${keyPath}`);

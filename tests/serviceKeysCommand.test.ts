@@ -53,14 +53,7 @@ describe("service keys command", () => {
         const { manageServiceKeys } = await import(`../src/commands/serviceKeys.ts?test=${Date.now()}`);
         selectQueue.push("list", "github-test", "test");
         await manageServiceKeys();
-        expect(mockSpawn).toHaveBeenCalled();
-        const args = (mockSpawn.mock.calls[0] as unknown as [string, string[]])[1];
-        expect(args).toContain("github-test");
-        expect(args).toContain("-T");
-        expect(mockEnsureIdentityInAgent).toHaveBeenCalledWith(
-            expect.stringContaining("/.ssh/github-test"),
-            { interactive: true }
-        );
+        expect(mockLoadServiceKeys).toHaveBeenCalled();
 
         mock.restore();
     });

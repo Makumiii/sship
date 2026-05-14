@@ -2,41 +2,42 @@ import { logger } from "../utils/logger.ts";
 import { getAllFiles } from "../utils/getAllFiles.ts";
 import { select } from "../utils/select.ts";
 import { unlinkSync } from "node:fs";
-import {homedir} from 'node:os'
-import {readFile, writeFile} from 'fs/promises'
+import { homedir } from "node:os";
+import { readFile, writeFile } from "fs/promises";
 import { loadServiceKeys, removeServiceKey } from "../utils/serviceKeys.ts";
 
-// get files in ssh dir
-const location = homedir()
-const fullLocation = `${location}/.ssh`;
+function getSshDir(): string {
+  return `${homedir()}/.ssh`;
+}
 
-const sshConfigLocation = `${fullLocation}/config`;
+function getSshConfigPath(): string {
+  return `${getSshDir()}/config`;
+}
 
-const blockRegex = (alias:string) => new RegExp(`^Host\\s+${alias}\\b(?:\\r?\\n(?!Host\\b)[ \\t]+\\S.*)*`,'m')
+const blockRegex = (alias: string) =>
+  new RegExp(`^Host\\s+${alias}\\b(?:\\r?\\n(?!Host\\b)[ \\t]+\\S.*)*`, "m");
 
 
-export async function deleteKeyAlias(alias:string){
-  try{
+export async function deleteKeyAlias(alias: string) {
+  try {
+    const sshConfigLocation = getSshConfigPath();
     const config = await readFile(sshConfigLocation, 'utf-8');
-    const regex = blockRegex(alias)
+    const regex = blockRegex(alias);
     const match = config.match(regex);
     if (!match) {
       logger.fail(`No matching alias found for: ${alias}`);
       return;
     }
-    const newConfig = config.replace(regex, '')
+    const newConfig = config.replace(regex, "");
     await writeFile(sshConfigLocation, newConfig, 'utf-8');
-
-
-
-
-  }catch(e){
+  } catch (e) {
     logger.fail(`An error occurred while deleting the key alias: ${e}`);
   }
 
 }
 
 function deleteSelectedKey(selectedKey: string, files: string[]) {
+  const fullLocation = getSshDir();
   const filesToDelete = files.filter((file) => file.includes(selectedKey));
 
   filesToDelete.forEach((file) => {
@@ -81,9 +82,8 @@ export default async function deleteCommand(keyName?: string, yes?: boolean) {
     return;
   }
 
-  deleteSelectedKey(selectedKey, getAllFiles(fullLocation));
+  deleteSelectedKey(selectedKey, getAllFiles(getSshDir()));
   await deleteKeyAlias(selectedKey);
   await removeServiceKey(selectedKey);
   
 }
-

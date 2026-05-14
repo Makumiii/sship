@@ -27,14 +27,12 @@ mock.module(serviceKeysPath, () => ({
 mock.module(allFilesPath, () => ({ getAllFiles: mockGetAllFiles }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
 mock.module(selectPath, () => ({ select: mock(async () => "Yes") }));
-mock.module("node:fs", () => ({ unlinkSync: mockUnlinkSync }));
+mock.module("node:fs", () => ({ unlinkSync: mockUnlinkSync, constants: { F_OK: 0 } }));
 mock.module("node:os", () => ({ homedir: () => "/mock/home" }));
 mock.module("fs/promises", () => ({
     readFile: mockReadFile,
     writeFile: mockWriteFile,
 }));
-
-import deleteCommand from "../src/commands/deleteKey.ts";
 
 describe("delete key command", () => {
     beforeEach(() => {
@@ -49,6 +47,7 @@ describe("delete key command", () => {
     });
 
     test("deletes selected key files and removes alias/store entry", async () => {
+        const { default: deleteCommand } = await import(`../src/commands/deleteKey.ts?test=${Date.now()}`);
         await deleteCommand("alpha", true);
 
         expect(mockGetAllFiles).toHaveBeenCalledWith("/mock/home/.ssh");
@@ -60,6 +59,7 @@ describe("delete key command", () => {
     });
 
     test("fails gracefully when key argument does not exist", async () => {
+        const { default: deleteCommand } = await import(`../src/commands/deleteKey.ts?test=${Date.now()}`);
         await deleteCommand("missing", true);
 
         expect(mockLogger.fail).toHaveBeenCalledWith("Key 'missing' not found.");

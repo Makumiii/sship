@@ -38,7 +38,11 @@ const mockSpawn = mock((_cmd: string, _args: string[], options?: { stdio?: unkno
 let publicKeyExists = false;
 const mockExistsSync = mock(() => publicKeyExists);
 
-mock.module("node:child_process", () => ({ spawn: mockSpawn }));
+mock.module("node:child_process", () => ({
+  spawn: mockSpawn,
+  spawnSync: mock(() => ({ status: 1, stdout: "", stderr: "" })),
+  execSync: mock(() => ""),
+}));
 mock.module("node:fs", () => ({ existsSync: mockExistsSync }));
 
 describe("sshAgent helper", () => {

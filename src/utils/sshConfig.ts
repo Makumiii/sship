@@ -10,7 +10,7 @@ const SSH_CONFIG_PATH = join(homedir(), ".ssh", "config");
 export function generateSshConfigBlock(server: ServerConfig): string {
     const identityLine =
         server.authMode === "identity_file" && server.identityFile
-            ? `    IdentityFile ${server.identityFile}\n    IdentitiesOnly yes\n`
+            ? `    IdentityFile ${server.identityFile}\n    IdentitiesOnly yes\n    AddKeysToAgent yes\n`
             : "";
     return `
 # Added by sship - ${server.name}
