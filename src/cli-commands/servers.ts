@@ -10,6 +10,8 @@ import {
   getServer,
   loadServers,
   updateServer,
+  recordServerUsage,
+  getQuickConnectServer,
 } from "../utils/serverStorage.ts";
 import { addToSshConfig, removeFromSshConfig, updateSshConfig } from "../utils/sshConfig.ts";
 import type { ServerAuthMode, ServerConfig } from "../types/serverTypes.ts";
@@ -282,14 +284,28 @@ export function registerServersCommand(program: Command) {
     });
 
   servers
-    .command("connect <name>")
-    .description("Open SSH connection to a configured server")
-    .action(async (name: string) => {
-      const server = await getServer(name);
+    .command("connect [name]")
+    .description("Open SSH connection to a configured server (defaults to most recent)")
+    .action(async (name?: string) => {
+      let server: ServerConfig | null | undefined;
+
+      if (name) {
+        server = await getServer(name);
+      } else {
+        server = await getQuickConnectServer();
+        if (!server) {
+          logger.fail("No servers configured. Use 'sship servers add' to add one.");
+          return;
+        }
+        logger.info(`No server specified — connecting to ${server.name} (${server.user}@${server.host})`);
+      }
+
       if (!server) {
         logger.fail(`Server \"${name}\" not found`);
         return;
       }
+
+      await recordServerUsage(server.name);
 
       let args: string[];
       try {
@@ -304,7 +320,7 @@ export function registerServersCommand(program: Command) {
       }
 
       const code = await new Promise<number>((resolve) => {
-        if (server.authMode === "password") {
+        if (server!.authMode === "password") {
           logger.info("Password auth selected. SSH may prompt you for password.");
         }
         const child = spawn("ssh", args, { stdio: "inherit" });
