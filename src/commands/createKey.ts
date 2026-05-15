@@ -177,7 +177,7 @@ export default async function createKeyCommand(options?: CreateKeyOptions) {
         } else {
           logger.info("Could not copy to clipboard automatically. Please copy the key above.");
         }
-      } catch (err) {
+      } catch {
         logger.warn("Could not read or copy public key automatically.");
       }
     }

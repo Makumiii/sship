@@ -398,7 +398,6 @@ async function connectServerFlow(selectedName?: string): Promise<void> {
     return;
   }
 
-  await recordServerUsage(server.name);
   logger.succeed(`Connecting to ${server.name}...`);
   await ensureManagedAgent();
   if (server.authMode === "password") {
@@ -410,7 +409,13 @@ async function connectServerFlow(selectedName?: string): Promise<void> {
 
   try {
     const code = await runCommand("ssh", buildSshArgs(server, "connect"));
-    if (code !== 0) {
+    if (code === 0) {
+      try {
+        await recordServerUsage(server.name);
+      } catch {
+        // Silently ignore recording failures
+      }
+    } else {
       logger.fail(`Connection to ${server.name} failed`);
     }
   } catch (error) {

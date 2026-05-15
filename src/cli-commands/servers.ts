@@ -305,8 +305,6 @@ export function registerServersCommand(program: Command) {
         return;
       }
 
-      await recordServerUsage(server.name);
-
       let args: string[];
       try {
         if (server.authMode === "identity_file" && server.identityFile) {
@@ -327,7 +325,11 @@ export function registerServersCommand(program: Command) {
         child.on("close", (exitCode) => resolve(exitCode ?? 1));
         child.on("error", () => resolve(1));
       });
-      if (code !== 0) {
+      if (code === 0) {
+        try {
+          await recordServerUsage(server.name);
+        } catch { /* ignore */ }
+      } else {
         logger.fail(`Connection to ${server.name} failed`);
       }
     });

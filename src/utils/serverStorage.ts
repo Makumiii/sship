@@ -87,11 +87,32 @@ export async function deleteServer(name: string): Promise<void> {
     await saveServers(filtered);
 }
 
+export function isLikelyTestOrMockServer(server: ServerConfig): boolean {
+    const name = (server.name || "").toLowerCase();
+    const host = (server.host || "").toLowerCase();
+
+    // Common local/test hosts and loopback addresses
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "0.0.0.0") {
+        return true;
+    }
+
+    // Heuristic: names containing obvious test/mock markers
+    if (name.includes("test") || name.includes("mock")) {
+        return true;
+    }
+
+    return false;
+}
+
 export async function recordServerUsage(name: string): Promise<void> {
     const servers = await loadServers();
     const index = servers.findIndex((s) => s.name === name);
     if (index === -1) return;
     const current = servers[index];
+
+    // Never record usage for likely test/mock/local servers
+    if (!current || isLikelyTestOrMockServer(current)) return;
+
     servers[index] = { ...current, lastUsedAt: new Date().toISOString() } as ServerConfig;
     await saveServers(servers);
 }
@@ -100,15 +121,19 @@ export async function getQuickConnectServer(): Promise<ServerConfig | null> {
     const servers = await loadServers();
     if (servers.length === 0) return null;
 
+    // Filter out likely test/mock/local servers from MRU candidates
+    const candidates = servers.filter((s) => !isLikelyTestOrMockServer(s));
+    if (candidates.length === 0) return null;
+
     // Prefer most recently used server
-    const usedServers = servers.filter((s) => s.lastUsedAt);
+    const usedServers = candidates.filter((s) => s.lastUsedAt);
     if (usedServers.length > 0) {
         usedServers.sort((a, b) => new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime());
         return usedServers[0] ?? null;
     }
 
     // Fall back to most recently added server
-    const sorted = [...servers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sorted = [...candidates].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return sorted[0] ?? null;
 }
 
