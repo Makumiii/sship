@@ -87,6 +87,31 @@ export async function deleteServer(name: string): Promise<void> {
     await saveServers(filtered);
 }
 
+export async function recordServerUsage(name: string): Promise<void> {
+    const servers = await loadServers();
+    const index = servers.findIndex((s) => s.name === name);
+    if (index === -1) return;
+    const current = servers[index];
+    servers[index] = { ...current, lastUsedAt: new Date().toISOString() } as ServerConfig;
+    await saveServers(servers);
+}
+
+export async function getQuickConnectServer(): Promise<ServerConfig | null> {
+    const servers = await loadServers();
+    if (servers.length === 0) return null;
+
+    // Prefer most recently used server
+    const usedServers = servers.filter((s) => s.lastUsedAt);
+    if (usedServers.length > 0) {
+        usedServers.sort((a, b) => new Date(b.lastUsedAt!).getTime() - new Date(a.lastUsedAt!).getTime());
+        return usedServers[0] ?? null;
+    }
+
+    // Fall back to most recently added server
+    const sorted = [...servers].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return sorted[0] ?? null;
+}
+
 export async function copyIdentityToSsh(identityPath: string, serverName: string): Promise<string> {
     if (!existsSync(SSH_DIR)) {
         await mkdir(SSH_DIR, { recursive: true, mode: 0o700 });

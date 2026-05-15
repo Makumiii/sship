@@ -8,6 +8,7 @@ export interface ServerConfig {
     authMode: ServerAuthMode;
     identityFile?: string;
     createdAt: string;
+    lastUsedAt?: string;
 }
 
 export interface ServersFile {

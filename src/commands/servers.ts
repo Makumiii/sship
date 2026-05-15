@@ -12,6 +12,7 @@ import {
   updateServer,
   deleteServer,
   copyIdentityToSsh,
+  recordServerUsage,
 } from "../utils/serverStorage.ts";
 import {
   addToSshConfig,
@@ -397,6 +398,7 @@ async function connectServerFlow(selectedName?: string): Promise<void> {
     return;
   }
 
+  await recordServerUsage(server.name);
   logger.succeed(`Connecting to ${server.name}...`);
   await ensureManagedAgent();
   if (server.authMode === "password") {
@@ -581,4 +583,8 @@ export async function serversCommand(): Promise<void> {
     case "back":
       return;
   }
+}
+
+export async function connectToServer(name: string): Promise<void> {
+  await connectServerFlow(name);
 }

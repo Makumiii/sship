@@ -29,11 +29,12 @@ import initCommand from "./commands/init.ts";
 import logsCommand from "./commands/logs.ts";
 import doctorCommand from "./commands/doctor.ts";
 import onboardCommand from "./commands/onboard.ts";
-import { serversCommand } from "./commands/servers.ts";
+import { serversCommand, connectToServer } from "./commands/servers.ts";
 import { transferCommand } from "./commands/transfer.ts";
 import { tunnelCommand } from "./commands/tunnel.ts";
 import { manageServiceKeys } from "./commands/serviceKeys.ts";
 import agentCommand from "./commands/agent.ts";
+import { getQuickConnectServer } from "./utils/serverStorage.ts";
 
 const packageJson = JSON.parse(
     readFileSync(join(import.meta.dirname, "../package.json"), "utf-8")
@@ -77,7 +78,18 @@ if (hasArgs) {
     }
 } else {
     // Interactive mode - show menu
-    const menuChoices: SelectChoice<Tasks>[] = [
+    const quickServer = await getQuickConnectServer();
+
+    const menuChoices: SelectChoice<Tasks>[] = [];
+
+    if (quickServer) {
+        menuChoices.push({
+            name: `⚡ Quick Connect: ${quickServer.name} (${quickServer.user}@${quickServer.host})`,
+            value: "quickConnect",
+        });
+    }
+
+    menuChoices.push(
         { name: "Service Keys", value: "serviceKeys" },
         { name: "Server Connections", value: "servers" },
         { name: "Transfer Files (Synergy)", value: "transfer" },
@@ -91,12 +103,18 @@ if (hasArgs) {
         { name: "View Logs", value: "logs" },
         { name: "Uninstall SSHIP", value: "uninstall" },
         { name: "Exit", value: "exit" },
-    ];
+    );
 
     try {
         const chosenTask = await select<Tasks>("What do you want to do?", menuChoices);
 
         switch (chosenTask) {
+            case "quickConnect": {
+                if (quickServer) {
+                    await connectToServer(quickServer.name);
+                }
+                break;
+            }
             case "serviceKeys": {
                 await manageServiceKeys();
                 break;
