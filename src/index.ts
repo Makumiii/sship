@@ -35,6 +35,7 @@ import { tunnelCommand } from "./commands/tunnel.ts";
 import { manageServiceKeys } from "./commands/serviceKeys.ts";
 import agentCommand from "./commands/agent.ts";
 import { getQuickConnectServer } from "./utils/serverStorage.ts";
+import { repairServiceKeySshConfig } from "./utils/sshConfig.ts";
 
 const packageJson = JSON.parse(
     readFileSync(join(import.meta.dirname, "../package.json"), "utf-8")
@@ -42,6 +43,15 @@ const packageJson = JSON.parse(
 
 // Check if arguments were passed (beyond just the node and script path)
 const hasArgs = process.argv.length > 2;
+
+try {
+    const repair = await repairServiceKeySshConfig();
+    if (repair.repaired) {
+        logger.info(`Repaired malformed service key SSH config entries (backup: ${repair.backupPath}).`);
+    }
+} catch (error) {
+    logger.warn(`Could not repair service key SSH config automatically: ${error}`);
+}
 
 if (hasArgs) {
     // CLI mode - use commander

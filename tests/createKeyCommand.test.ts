@@ -14,6 +14,8 @@ const mockSelect = mock(async () => "github");
 
 const mockAddServiceKey = mock(async () => {});
 const mockEnsureIdentityInAgent = mock(async () => "added");
+const mockRepairServiceKeySshConfig = mock(async () => ({ repaired: false }));
+const mockResolveScriptPath = mock(() => "/mock/scripts/commands/createKey.sh");
 const mockLogger = {
     info: mock(() => {}),
     fail: mock(() => {}),
@@ -41,11 +43,15 @@ const selectPath = new URL("../src/utils/select.ts", import.meta.url).pathname;
 const serviceKeysPath = new URL("../src/utils/serviceKeys.ts", import.meta.url).pathname;
 const sshAgentPath = new URL("../src/utils/sshAgent.ts", import.meta.url).pathname;
 const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
+const sshConfigPath = new URL("../src/utils/sshConfig.ts", import.meta.url).pathname;
+const scriptPath = new URL("../src/utils/scriptPath.ts", import.meta.url).pathname;
 
 mock.module(promptPath, () => ({ promptUser: mockPromptUser }));
 mock.module(selectPath, () => ({ select: mockSelect }));
 mock.module(serviceKeysPath, () => ({ addServiceKey: mockAddServiceKey }));
 mock.module(sshAgentPath, () => ({ ensureIdentityInAgent: mockEnsureIdentityInAgent }));
+mock.module(sshConfigPath, () => ({ repairServiceKeySshConfig: mockRepairServiceKeySshConfig }));
+mock.module(scriptPath, () => ({ resolveScriptPath: mockResolveScriptPath }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
 mock.module("child_process", () => ({ spawn: mockSpawn }));
 
@@ -58,6 +64,9 @@ describe("create key command", () => {
         mockSelect.mockClear();
         mockAddServiceKey.mockClear();
         mockEnsureIdentityInAgent.mockClear();
+        mockRepairServiceKeySshConfig.mockClear();
+        mockRepairServiceKeySshConfig.mockResolvedValue({ repaired: false });
+        mockResolveScriptPath.mockClear();
         mockSpawn.mockClear();
         mockLogger.start.mockClear();
         mockLogger.succeed.mockClear();
@@ -82,6 +91,7 @@ describe("create key command", () => {
         expect(mockLogger.start).toHaveBeenCalledWith("Generating SSH key...");
         expect(mockLogger.succeed).toHaveBeenCalledWith("SSH key creation complete.");
         expect(mockAddServiceKey).toHaveBeenCalledWith("gh-prod");
+        expect(mockRepairServiceKeySshConfig).toHaveBeenCalledWith(["gh-prod"]);
         expect(mockEnsureIdentityInAgent).toHaveBeenCalled();
     });
 

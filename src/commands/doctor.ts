@@ -8,6 +8,7 @@ import { deleteKeyAlias } from "./deleteKey.ts";
 import { loadServiceKeys, removeServiceKey } from "../utils/serviceKeys.ts";
 import { loadServers, deleteServer } from "../utils/serverStorage.ts";
 import { loadTunnels, clearDeadPids } from "../utils/tunnelStorage.ts";
+import { repairServiceKeySshConfig } from "../utils/sshConfig.ts";
 const sshConfigLocation = `${homedir()}/.ssh/config`;
 const sshipDir = join(homedir(), ".sship");
 const serviceKeysPath = join(sshipDir, "service-keys.json");
@@ -153,6 +154,10 @@ export default async function doctorCommand(options?: DoctorOptions) {
     await ensureJsonFile(serviceKeysPath, JSON.stringify({ keys: [] }, null, 2));
     await ensureJsonFile(serversPath, JSON.stringify({ servers: [] }, null, 2));
     await ensureJsonFile(tunnelsPath, JSON.stringify({ tunnels: [] }, null, 2));
+    const repair = await repairServiceKeySshConfig();
+    if (repair.repaired) {
+      logger.info(`Repaired malformed service key SSH config entries (backup: ${repair.backupPath}).`);
+    }
   }
 
   if (fixShell) {

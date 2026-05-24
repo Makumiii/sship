@@ -16,6 +16,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { readFile } from "node:fs/promises";
 import { copyToClipboard } from "../utils/clipboard.ts";
+import { repairServiceKeySshConfig } from "../utils/sshConfig.ts";
 
 const basePromptMessages: UserPromptMessage[] = [
   {
@@ -154,6 +155,10 @@ export default async function createKeyCommand(options?: CreateKeyOptions) {
     const keyName = typeof responses.name === "string" ? responses.name.trim() : "";
     if (keyName !== "") {
       await addServiceKey(keyName);
+      const repair = await repairServiceKeySshConfig([keyName]);
+      if (repair.repaired) {
+        logger.info(`Repaired malformed service key SSH config entries (backup: ${repair.backupPath}).`);
+      }
       const keyPath = join(homedir(), ".ssh", keyName);
       await ensureManagedAgent();
       const agentStatus = await ensureIdentityInAgent(keyPath, { interactive: true });

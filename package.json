@@ -1,6 +1,6 @@
 {
   "name": "sship",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "The ultimate SSH companion tool with built-in Synergy (SFTP) file transfer.",
   "keywords": [
     "ssh",
@@ -25,12 +25,12 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "npm run typecheck && npm run lint",
-    "test": "BUN_TMPDIR=/tmp bun test",
-    "test:unit": "BUN_TMPDIR=/tmp bun test --coverage",
-    "test:integration": "BUN_TMPDIR=/tmp bun test ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/scriptPath.integration.ts",
-    "test:smoke": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts",
-    "test:all": "BUN_TMPDIR=/tmp bun test && BUN_TMPDIR=/tmp bun test ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test ./tests/scriptPath.integration.ts && BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts",
-    "test:phase-regression": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test ./tests/smoke.cli.smoke.ts ./tests/backupCommand.test.ts ./tests/restoreCommand.test.ts ./tests/initCommand.integration.ts ./tests/logsCommand.integration.ts"
+    "test": "BUN_TMPDIR=/tmp bun test --isolate",
+    "test:unit": "BUN_TMPDIR=/tmp bun test --isolate --coverage",
+    "test:integration": "BUN_TMPDIR=/tmp bun test --isolate ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test --isolate ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test --isolate ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test --isolate ./tests/scriptPath.integration.ts",
+    "test:smoke": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test --isolate ./tests/smoke.cli.smoke.ts",
+    "test:all": "BUN_TMPDIR=/tmp bun test --isolate && BUN_TMPDIR=/tmp bun test --isolate ./tests/tunnelStorage.integration.ts && BUN_TMPDIR=/tmp bun test --isolate ./tests/serversCommand.integration.ts && BUN_TMPDIR=/tmp bun test --isolate ./tests/sshConfig.integration.ts && BUN_TMPDIR=/tmp bun test --isolate ./tests/scriptPath.integration.ts && BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test --isolate ./tests/smoke.cli.smoke.ts",
+    "test:phase-regression": "BUN_TMPDIR=/tmp bun run build && BUN_TMPDIR=/tmp bun test --isolate ./tests/smoke.cli.smoke.ts ./tests/backupCommand.test.ts ./tests/restoreCommand.test.ts ./tests/initCommand.integration.ts ./tests/logsCommand.integration.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

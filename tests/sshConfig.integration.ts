@@ -128,4 +128,74 @@ Host another-host
         expect(content).toContain("HostName 192.168.1.1");
         expect(content).not.toContain("HostName old.example.com");
     });
+
+    test("repairServiceKeySshConfigContent rebuilds orphaned service key blocks", async () => {
+        const { repairServiceKeySshConfigContent } = await loadSshConfigModule();
+        const content = repairServiceKeySshConfigContent(
+            ` github.com
+    HostName github.com
+    User git
+    IdentityFile ${join(testHome, ".ssh", "GH")}
+    AddKeysToAgent yes
+Host GH github.com
+    HostName github.com
+    User git
+    IdentityFile ${join(testHome, ".ssh", "GH")}
+    AddKeysToAgent yes
+`,
+            ["GH"],
+        );
+
+        expect(content).not.toMatch(/^\s*github\.com$/m);
+        expect((content.match(/^Host GH github\.com$/gm) ?? []).length).toBe(1);
+        expect(content).toContain("IdentityFile " + join(testHome, ".ssh", "GH"));
+    });
+
+    test("removeServiceKeySshConfigBlocks removes full multi-alias host block", async () => {
+        const { removeServiceKeySshConfigBlocks } = await loadSshConfigModule();
+        const content = removeServiceKeySshConfigBlocks(
+            `Host GH github.com
+    HostName github.com
+    User git
+    IdentityFile ${join(testHome, ".ssh", "GH")}
+    AddKeysToAgent yes
+Host other
+    HostName example.com
+`,
+            "GH",
+        );
+
+        expect(content).not.toContain("Host GH github.com");
+        expect(content).not.toContain("HostName github.com");
+        expect(content).toContain("Host other");
+    });
+
+    test("repairServiceKeySshConfig creates backup before rewriting affected config", async () => {
+        const { repairServiceKeySshConfig } = await loadSshConfigModule();
+        const sshConfigPath = join(testHome, ".ssh", "config");
+        const keyPath = join(testHome, ".ssh", "GH");
+        writeFileSync(
+            sshConfigPath,
+            `github.com
+    HostName github.com
+    User git
+    IdentityFile ${keyPath}
+Host GH github.com
+    HostName github.com
+    User git
+    IdentityFile ${keyPath}
+`,
+            "utf-8",
+        );
+
+        const result = await repairServiceKeySshConfig(["GH"]);
+
+        expect(result.repaired).toBe(true);
+        expect(typeof result.backupPath).toBe("string");
+        expect(existsSync(result.backupPath!)).toBe(true);
+
+        const content = readFileSync(sshConfigPath, "utf-8");
+        expect(content).not.toMatch(/^github\.com$/m);
+        expect((content.match(/^Host GH github\.com$/gm) ?? []).length).toBe(1);
+    });
 });

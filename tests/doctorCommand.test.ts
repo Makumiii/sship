@@ -13,6 +13,7 @@ const mockLoadServers = mock(async () => []);
 const mockDeleteServer = mock(async () => {});
 const mockLoadTunnels = mock(async () => []);
 const mockClearDeadPids = mock(async () => {});
+const mockRepairServiceKeySshConfig = mock(async () => ({ repaired: false }));
 
 const mockLogger = {
     info: mock(() => {}),
@@ -28,6 +29,7 @@ const deleteKeyPath = new URL("../src/commands/deleteKey.ts", import.meta.url).p
 const serviceKeysPath = new URL("../src/utils/serviceKeys.ts", import.meta.url).pathname;
 const serverStoragePath = new URL("../src/utils/serverStorage.ts", import.meta.url).pathname;
 const tunnelStoragePath = new URL("../src/utils/tunnelStorage.ts", import.meta.url).pathname;
+const sshConfigPath = new URL("../src/utils/sshConfig.ts", import.meta.url).pathname;
 
 mock.module(loggerPath, () => ({ logger: mockLogger }));
 mock.module(selectPath, () => ({ select: mockSelect }));
@@ -44,7 +46,10 @@ mock.module(tunnelStoragePath, () => ({
     loadTunnels: mockLoadTunnels,
     clearDeadPids: mockClearDeadPids,
 }));
-mock.module("node:os", () => ({ homedir: () => "/mock/home" }));
+mock.module(sshConfigPath, () => ({
+    repairServiceKeySshConfig: mockRepairServiceKeySshConfig,
+}));
+mock.module("node:os", () => ({ homedir: () => "/mock/home", platform: () => "linux" }));
 mock.module("node:fs", () => ({ existsSync: mockExistsSync, constants: { F_OK: 0 } }));
 mock.module("node:fs/promises", () => ({
     readFile: mockReadFile,
@@ -68,6 +73,8 @@ describe("doctor command", () => {
         mockDeleteServer.mockClear();
         mockLoadTunnels.mockClear();
         mockClearDeadPids.mockClear();
+        mockRepairServiceKeySshConfig.mockClear();
+        mockRepairServiceKeySshConfig.mockResolvedValue({ repaired: false });
         mockWriteFile.mockClear();
         mockCopyFile.mockClear();
         mockLogger.info.mockClear();
@@ -143,6 +150,7 @@ Host staging
 
         await doctorCommand({ fixAll: true });
 
+        expect(mockRepairServiceKeySshConfig).toHaveBeenCalled();
         expect(mockSelect).not.toHaveBeenCalled();
         expect(mockDeleteKeyAlias).toHaveBeenCalledWith("stale");
         expect(mockRemoveServiceKey).toHaveBeenCalledWith("ghost-key");

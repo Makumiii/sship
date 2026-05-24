@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, mock, test } from "bun:test";
 const mockLoadServiceKeys = mock(async () => ["alpha"] as string[]);
 const mockRemoveServiceKey = mock(async () => {});
 const mockGetAllFiles = mock(() => ["alpha", "alpha.pub", "other"] as string[]);
-const mockReadFile = mock(async () => "Host alpha\n  IdentityFile ~/.ssh/alpha\nHost beta\n  IdentityFile ~/.ssh/beta\n");
-const mockWriteFile = mock(async () => {});
+const mockRemoveServiceKeyFromSshConfig = mock(async () => true);
 const mockUnlinkSync = mock(() => {});
+const mockExistsSync = mock(() => false);
+const mockReadFileSync = mock(() => JSON.stringify({ version: "0.0.0-test" }));
 
 const mockLogger = {
     info: mock(() => {}),
@@ -19,6 +20,7 @@ const serviceKeysPath = new URL("../src/utils/serviceKeys.ts", import.meta.url).
 const allFilesPath = new URL("../src/utils/getAllFiles.ts", import.meta.url).pathname;
 const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
 const selectPath = new URL("../src/utils/select.ts", import.meta.url).pathname;
+const sshConfigPath = new URL("../src/utils/sshConfig.ts", import.meta.url).pathname;
 
 mock.module(serviceKeysPath, () => ({
     loadServiceKeys: mockLoadServiceKeys,
@@ -27,21 +29,28 @@ mock.module(serviceKeysPath, () => ({
 mock.module(allFilesPath, () => ({ getAllFiles: mockGetAllFiles }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
 mock.module(selectPath, () => ({ select: mock(async () => "Yes") }));
-mock.module("node:fs", () => ({ unlinkSync: mockUnlinkSync, constants: { F_OK: 0 } }));
-mock.module("node:os", () => ({ homedir: () => "/mock/home" }));
-mock.module("fs/promises", () => ({
-    readFile: mockReadFile,
-    writeFile: mockWriteFile,
+mock.module(sshConfigPath, () => ({
+    removeServiceKeyFromSshConfig: mockRemoveServiceKeyFromSshConfig,
+    repairServiceKeySshConfig: mock(async () => ({ repaired: false })),
 }));
+mock.module("node:fs", () => ({
+    unlinkSync: mockUnlinkSync,
+    existsSync: mockExistsSync,
+    readFileSync: mockReadFileSync,
+    constants: { F_OK: 0 },
+}));
+mock.module("node:os", () => ({ homedir: () => "/mock/home", platform: () => "linux" }));
 
 describe("delete key command", () => {
     beforeEach(() => {
         mockLoadServiceKeys.mockClear();
         mockRemoveServiceKey.mockClear();
         mockGetAllFiles.mockClear();
-        mockReadFile.mockClear();
-        mockWriteFile.mockClear();
+        mockRemoveServiceKeyFromSshConfig.mockClear();
+        mockRemoveServiceKeyFromSshConfig.mockResolvedValue(true);
         mockUnlinkSync.mockClear();
+        mockExistsSync.mockClear();
+        mockReadFileSync.mockClear();
         mockLogger.info.mockClear();
         mockLogger.fail.mockClear();
     });
@@ -54,7 +63,7 @@ describe("delete key command", () => {
         const unlinkCalls = mockUnlinkSync.mock.calls as unknown as Array<[string]>;
         expect(unlinkCalls).toContainEqual(["/mock/home/.ssh/alpha"]);
         expect(unlinkCalls).toContainEqual(["/mock/home/.ssh/alpha.pub"]);
-        expect(mockWriteFile).toHaveBeenCalled();
+        expect(mockRemoveServiceKeyFromSshConfig).toHaveBeenCalledWith("alpha");
         expect(mockRemoveServiceKey).toHaveBeenCalledWith("alpha");
     });
 

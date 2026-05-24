@@ -10,6 +10,7 @@ const transferPath = new URL("../src/commands/transfer.ts", import.meta.url).pat
 const tunnelPath = new URL("../src/commands/tunnel.ts", import.meta.url).pathname;
 const restorePath = new URL("../src/commands/restore.ts", import.meta.url).pathname;
 const commandUtilPath = new URL("../src/utils/command.ts", import.meta.url).pathname;
+const sshConfigPath = new URL("../src/utils/sshConfig.ts", import.meta.url).pathname;
 
 const cliCreatePath = new URL("../src/cli-commands/create.ts", import.meta.url).pathname;
 const cliDeletePath = new URL("../src/cli-commands/delete.ts", import.meta.url).pathname;
@@ -36,10 +37,12 @@ const mockBackup = mock(async () => {});
 const mockDoctor = mock(async () => {});
 const mockOnboard = mock(async () => {});
 const mockServers = mock(async () => {});
+const mockConnectToServer = mock(async () => {});
 const mockTransfer = mock(async () => {});
 const mockTunnel = mock(async () => {});
 const mockRestore = mock(async () => {});
 const mockRunCommand = mock(async () => {});
+const mockRepairServiceKeySshConfig = mock(async () => ({ repaired: false }));
 
 const mockRegisterCreate = mock(() => {});
 const mockRegisterDelete = mock(() => {});
@@ -60,11 +63,12 @@ function mockCommonInteractiveDeps() {
     mock.module(backupPath, () => ({ default: mockBackup }));
     mock.module(doctorPath, () => ({ default: mockDoctor }));
     mock.module(onboardPath, () => ({ default: mockOnboard }));
-    mock.module(serversPath, () => ({ serversCommand: mockServers }));
+    mock.module(serversPath, () => ({ serversCommand: mockServers, connectToServer: mockConnectToServer }));
     mock.module(transferPath, () => ({ transferCommand: mockTransfer }));
     mock.module(tunnelPath, () => ({ tunnelCommand: mockTunnel }));
     mock.module(restorePath, () => ({ default: mockRestore }));
     mock.module(commandUtilPath, () => ({ runCommand: mockRunCommand }));
+    mock.module(sshConfigPath, () => ({ repairServiceKeySshConfig: mockRepairServiceKeySshConfig }));
     mock.module(new URL("../src/utils/logger.ts", import.meta.url).pathname, () => ({ logger }));
 }
 
@@ -85,7 +89,12 @@ function mockCliDeps() {
             name() { return this; }
             description() { return this; }
             version() { return this; }
+            command() { return this; }
+            option() { return this; }
+            action() { return this; }
+            addHelpText() { return this; }
             parse(argv: string[]) { parseMock(argv); return this; }
+            async parseAsync(argv: string[]) { parseMock(argv); return this; }
         },
     }));
 
@@ -108,10 +117,13 @@ describe("index entry flows", () => {
         mockDoctor.mockClear();
         mockOnboard.mockClear();
         mockServers.mockClear();
+        mockConnectToServer.mockClear();
         mockTransfer.mockClear();
         mockTunnel.mockClear();
         mockRestore.mockClear();
         mockRunCommand.mockClear();
+        mockRepairServiceKeySshConfig.mockClear();
+        mockRepairServiceKeySshConfig.mockResolvedValue({ repaired: false });
 
         logger.info.mockClear();
         logger.fail.mockClear();
