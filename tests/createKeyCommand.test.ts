@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, mock, test } from "bun:test";
+import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { EventEmitter } from "node:events";
 
 const mockPromptUser = mock(async (messages: Array<{ id: string; initialValue?: string }>) => {
@@ -14,6 +14,9 @@ const mockSelect = mock(async () => "github");
 
 const mockAddServiceKey = mock(async () => {});
 const mockEnsureIdentityInAgent = mock(async () => "added");
+const mockEnsureManagedAgent = mock(async () => ({ startedAgent: false, status: { running: true, socketPath: "/tmp/agent.sock", identities: "" } }));
+const mockInstallManagedAgentAutostart = mock(async () => ({ shellHook: true, service: true }));
+const mockIsManagedAgentShellHookInstalled = mock(async () => true);
 const mockRepairServiceKeySshConfig = mock(async () => ({ repaired: false }));
 const mockResolveScriptPath = mock(() => "/mock/scripts/commands/createKey.sh");
 const mockLogger = {
@@ -42,6 +45,7 @@ const promptPath = new URL("../src/utils/prompt.ts", import.meta.url).pathname;
 const selectPath = new URL("../src/utils/select.ts", import.meta.url).pathname;
 const serviceKeysPath = new URL("../src/utils/serviceKeys.ts", import.meta.url).pathname;
 const sshAgentPath = new URL("../src/utils/sshAgent.ts", import.meta.url).pathname;
+const agentManagerPath = new URL("../src/utils/agentManager.ts", import.meta.url).pathname;
 const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
 const sshConfigPath = new URL("../src/utils/sshConfig.ts", import.meta.url).pathname;
 const scriptPath = new URL("../src/utils/scriptPath.ts", import.meta.url).pathname;
@@ -50,6 +54,11 @@ mock.module(promptPath, () => ({ promptUser: mockPromptUser }));
 mock.module(selectPath, () => ({ select: mockSelect }));
 mock.module(serviceKeysPath, () => ({ addServiceKey: mockAddServiceKey }));
 mock.module(sshAgentPath, () => ({ ensureIdentityInAgent: mockEnsureIdentityInAgent }));
+mock.module(agentManagerPath, () => ({
+    ensureManagedAgent: mockEnsureManagedAgent,
+    installManagedAgentAutostart: mockInstallManagedAgentAutostart,
+    isManagedAgentShellHookInstalled: mockIsManagedAgentShellHookInstalled,
+}));
 mock.module(sshConfigPath, () => ({ repairServiceKeySshConfig: mockRepairServiceKeySshConfig }));
 mock.module(scriptPath, () => ({ resolveScriptPath: mockResolveScriptPath }));
 mock.module(loggerPath, () => ({ logger: mockLogger }));
@@ -58,12 +67,23 @@ mock.module("child_process", () => ({ spawn: mockSpawn }));
 import createKeyCommand from "../src/commands/createKey.ts";
 
 describe("create key command", () => {
+    const originalTtyDescriptor = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
+
     beforeEach(() => {
         spawnExitCode = 0;
+        Object.defineProperty(process.stdin, "isTTY", {
+            configurable: true,
+            value: true,
+        });
         mockPromptUser.mockClear();
         mockSelect.mockClear();
         mockAddServiceKey.mockClear();
         mockEnsureIdentityInAgent.mockClear();
+        mockEnsureManagedAgent.mockClear();
+        mockInstallManagedAgentAutostart.mockClear();
+        mockInstallManagedAgentAutostart.mockResolvedValue({ shellHook: true, service: true });
+        mockIsManagedAgentShellHookInstalled.mockClear();
+        mockIsManagedAgentShellHookInstalled.mockResolvedValue(true);
         mockRepairServiceKeySshConfig.mockClear();
         mockRepairServiceKeySshConfig.mockResolvedValue({ repaired: false });
         mockResolveScriptPath.mockClear();
@@ -72,6 +92,12 @@ describe("create key command", () => {
         mockLogger.succeed.mockClear();
         mockLogger.fail.mockClear();
         mockLogger.info.mockClear();
+    });
+
+    afterEach(() => {
+        if (originalTtyDescriptor) {
+            Object.defineProperty(process.stdin, "isTTY", originalTtyDescriptor);
+        }
     });
 
     test("uses CLI options as prompt initial values and stores key on success", async () => {
@@ -92,7 +118,46 @@ describe("create key command", () => {
         expect(mockLogger.succeed).toHaveBeenCalledWith("SSH key creation complete.");
         expect(mockAddServiceKey).toHaveBeenCalledWith("gh-prod");
         expect(mockRepairServiceKeySshConfig).toHaveBeenCalledWith(["gh-prod"]);
+        expect(mockEnsureManagedAgent).toHaveBeenCalled();
         expect(mockEnsureIdentityInAgent).toHaveBeenCalled();
+    });
+
+    test("prompts to install managed agent hook when key is loaded but shell hook is missing", async () => {
+        mockIsManagedAgentShellHookInstalled.mockResolvedValueOnce(false);
+        mockSelect.mockResolvedValueOnce("Yes");
+
+        await createKeyCommand({
+            email: "dev@example.com",
+            passphrase: "secret",
+            name: "gh-prod",
+            host: "github.com",
+            user: "git",
+        });
+
+        expect(mockSelect).toHaveBeenCalledWith(
+            "Install managed ssh-agent shell hook so future git pushes can reuse this key?",
+            ["Yes", "No"],
+        );
+        expect(mockInstallManagedAgentAutostart).toHaveBeenCalled();
+        expect(mockLogger.info).toHaveBeenCalledWith("Installed shell hook for future terminals.");
+    });
+
+    test("prints a concrete next step when managed agent hook install is declined", async () => {
+        mockIsManagedAgentShellHookInstalled.mockResolvedValueOnce(false);
+        mockSelect.mockResolvedValueOnce("No");
+
+        await createKeyCommand({
+            email: "dev@example.com",
+            passphrase: "secret",
+            name: "gh-prod",
+            host: "github.com",
+            user: "git",
+        });
+
+        expect(mockInstallManagedAgentAutostart).not.toHaveBeenCalled();
+        expect(mockLogger.info).toHaveBeenCalledWith(
+            "Run `sship init --fix` and open a new terminal to let git reuse this key without repeated passphrase prompts."
+        );
     });
 
     test("does not add service key when script fails", async () => {

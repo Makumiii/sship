@@ -51,6 +51,11 @@ function userFromBlock(lines: string[]): string | undefined {
     return userLine?.trim().split(/\s+/)[1];
 }
 
+function hasDirective(lines: string[], directive: string, value: string): boolean {
+    const pattern = new RegExp(`^\\s*${directive}\\s+${value}\\s*$`, "i");
+    return lines.some((line) => pattern.test(line));
+}
+
 function identityBelongsToAlias(identityFile: string | undefined, alias: string): boolean {
     if (!identityFile) return false;
     return basename(identityFile) === alias || identityFile === join(SSH_DIR, alias);
@@ -148,6 +153,7 @@ function serviceKeyBlock(alias: string, host: string, user: string, identityFile
     HostName ${host}
     User ${user}
     IdentityFile ${identityFile}
+    IdentitiesOnly yes
     AddKeysToAgent yes
 `;
 }
@@ -200,14 +206,21 @@ export function repairServiceKeySshConfigContent(config: string, serviceKeys: st
             });
 
         const hasMalformedBlock = matchingBlocks.some((block) => block.kind === "orphan");
-        if (matchingBlocks.length <= 1 && !hasMalformedBlock) {
+        const missingIdentitiesOnly = matchingBlocks.some((block) =>
+            !hasDirective(block.lines, "IdentitiesOnly", "yes")
+        );
+        if (matchingBlocks.length <= 1 && !hasMalformedBlock && !missingIdentitiesOnly) {
             continue;
         }
 
         const preferred = matchingBlocks.find((block) => block.kind === "host") ?? matchingBlocks[0];
         if (!preferred) continue;
 
-        const host = hostNameFromBlock(preferred.lines) ?? preferred.lines[0]?.trim() ?? alias;
+        const header = preferred.lines[0] ?? "";
+        const headerHost = preferred.kind === "host"
+            ? header.replace(/^Host\s+/i, "").trim().split(/\s+/).find((token) => token !== alias)
+            : undefined;
+        const host = hostNameFromBlock(preferred.lines) ?? headerHost ?? alias;
         const user = userFromBlock(preferred.lines) ?? "git";
         const identityFile = identityFileFromBlock(preferred.lines) ?? join(SSH_DIR, alias);
 

@@ -136,6 +136,51 @@ describe("CLI smoke", () => {
         expect(readLog(home)).toContain("No keys found to delete");
     });
 
+    test("create command writes service key config that reuses the managed identity", () => {
+        if (!ensureBuilt()) return;
+
+        const home = mkdtempSync(join(tmpdir(), "sship-smoke-home-"));
+        tempHomes.push(home);
+
+        const binDir = join(home, "bin");
+        mkdirSync(binDir, { recursive: true });
+        const sshAddStub = join(binDir, "ssh-add");
+        writeFileSync(
+            sshAddStub,
+            "#!/usr/bin/env sh\nif [ \"$1\" = \"-l\" ] || [ \"$1\" = \"-T\" ]; then exit 0; fi\nexit 0\n",
+            "utf-8"
+        );
+        chmodSync(sshAddStub, 0o755);
+
+        const result = runCli(
+            [
+                "create",
+                "--template",
+                "github",
+                "--email",
+                "dev@example.com",
+                "--passphrase",
+                "",
+                "--name",
+                "gh-smoke",
+            ],
+            home,
+            {
+                PATH: `${binDir}:${process.env.PATH ?? ""}`,
+                SSH_AUTH_SOCK: join(home, "agent.sock"),
+            }
+        );
+
+        expect(result.error).toBeUndefined();
+        expect(result.code).toBe(0);
+
+        const config = readFileSync(join(home, ".ssh", "config"), "utf-8");
+        expect(config).toContain("Host gh-smoke github.com");
+        expect(config).toContain(`IdentityFile ${join(home, ".ssh", "gh-smoke")}`);
+        expect(config).toContain("IdentitiesOnly yes");
+        expect(config).toContain("AddKeysToAgent yes");
+    });
+
     test("servers subcommands add/list/delete lifecycle works", () => {
         if (!ensureBuilt()) return;
 

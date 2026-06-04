@@ -47,6 +47,7 @@ Host $HOST_ALIAS $HOST
     HostName $HOST
     User $MACHINE_USER
     IdentityFile $IDENTITY_FILE
+    IdentitiesOnly yes
     AddKeysToAgent yes
 EOF
 echo "SSH configuration for $HOST_ALIAS ($HOST) added to $PATH_TO_CONF/$CONF_FILE"

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile, chmod } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import * as childProcess from "child_process";
 import { loadServiceKeys } from "./serviceKeys.ts";
 import { ensureIdentityInAgent, type EnsureIdentityInAgentStatus } from "./sshAgent.ts";
@@ -106,6 +106,34 @@ function listIdentityOutput(): string {
     env: process.env,
   });
   return `${result.stdout ?? ""}${result.stderr ?? ""}`.trim();
+}
+
+function currentShellRcFile(): string | undefined {
+  const shellName = basename(process.env.SHELL ?? "");
+  if (shellName === "zsh") return join(homedir(), ".zshrc");
+  if (shellName === "bash") return join(homedir(), ".bashrc");
+  return undefined;
+}
+
+function shellRcCandidates(): string[] {
+  const preferred = currentShellRcFile();
+  const fallback = [".zshrc", ".bashrc"].map((file) => join(homedir(), file));
+  return [...new Set([preferred, ...fallback].filter((file): file is string => Boolean(file)))];
+}
+
+export async function isManagedAgentShellHookInstalled(): Promise<boolean> {
+  for (const rcPath of shellRcCandidates()) {
+    if (!existsSync(rcPath)) continue;
+    try {
+      const content = await readFile(rcPath, "utf-8");
+      if (content.includes("agent-shell-hook.sh")) {
+        return true;
+      }
+    } catch {
+      // best effort
+    }
+  }
+  return false;
 }
 
 export async function ensureManagedAgent(): Promise<{ startedAgent: boolean; status: ManagedAgentStatus }> {
@@ -222,13 +250,12 @@ export SSH_AUTH_SOCK="\${SSH_AUTH_SOCK:-$SOCK}"
       await unlink(disabledHook).catch(() => {});
     }
 
-    // Inject source line into shell RC files (.zshrc, .bashrc)
+    // Inject source line into the current shell RC file, then any existing common RC files.
     const hookSourceLine = `source "$HOME/.sship/agent-shell-hook.sh" # Added by sship`;
-    const rcFiles = [".zshrc", ".bashrc"].map((f) => join(homedir(), f));
+    const rcFiles = shellRcCandidates();
     for (const rcPath of rcFiles) {
-      if (!existsSync(rcPath)) continue;
       try {
-        const content = await readFile(rcPath, "utf-8");
+        const content = existsSync(rcPath) ? await readFile(rcPath, "utf-8") : "";
         if (content.includes("agent-shell-hook.sh")) continue; // already present
         await writeFile(rcPath, `${content.trimEnd()}\n\n${hookSourceLine}\n`, "utf-8");
       } catch {

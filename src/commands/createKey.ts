@@ -6,7 +6,11 @@ import { addServiceKey } from "../utils/serviceKeys.ts";
 import { resolveScriptPath } from "../utils/scriptPath.ts";
 import { select } from "../utils/select.ts";
 import { ensureIdentityInAgent } from "../utils/sshAgent.ts";
-import { ensureManagedAgent } from "../utils/agentManager.ts";
+import {
+  ensureManagedAgent,
+  installManagedAgentAutostart,
+  isManagedAgentShellHookInstalled,
+} from "../utils/agentManager.ts";
 import {
   SERVICE_KEY_TEMPLATES,
   getServiceKeyTemplate,
@@ -78,6 +82,41 @@ async function pickTemplateInteractively(): Promise<ServiceKeyTemplate> {
 
   const selectedTemplateId = await select<string>("Select service template:", choices);
   return getServiceKeyTemplate(selectedTemplateId) ?? SERVICE_KEY_TEMPLATES[SERVICE_KEY_TEMPLATES.length - 1]!;
+}
+
+async function ensureFutureShellAgentHook(): Promise<void> {
+  const installed = await isManagedAgentShellHookInstalled();
+  if (installed) return;
+
+  if (!process.stdin.isTTY) {
+    logger.info(
+      "Run `sship init --fix` and open a new terminal to let git reuse this key without repeated passphrase prompts."
+    );
+    return;
+  }
+
+  const shouldInstall = await select<"Yes" | "No">(
+    "Install managed ssh-agent shell hook so future git pushes can reuse this key?",
+    ["Yes", "No"],
+  );
+
+  if (shouldInstall !== "Yes") {
+    logger.info(
+      "Run `sship init --fix` and open a new terminal to let git reuse this key without repeated passphrase prompts."
+    );
+    return;
+  }
+
+  const result = await installManagedAgentAutostart();
+  if (result.shellHook) {
+    logger.info("Installed shell hook for future terminals.");
+    logger.info("Open a new terminal before your next git push so the shell can load the managed agent.");
+  } else {
+    logger.warn("Could not install shell hook for managed ssh-agent.");
+    logger.info(
+      "Run `sship init --fix` and open a new terminal to let git reuse this key without repeated passphrase prompts."
+    );
+  }
 }
 
 export default async function createKeyCommand(options?: CreateKeyOptions) {
@@ -169,6 +208,7 @@ export default async function createKeyCommand(options?: CreateKeyOptions) {
       } else if (agentStatus === "failed") {
         logger.warn(`Could not load key into ssh-agent automatically: ${keyPath}`);
       }
+      await ensureFutureShellAgentHook();
     }
     if (keyName !== "") {
       try {

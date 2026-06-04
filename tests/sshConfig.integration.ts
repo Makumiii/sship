@@ -149,6 +149,24 @@ Host GH github.com
         expect(content).not.toMatch(/^\s*github\.com$/m);
         expect((content.match(/^Host GH github\.com$/gm) ?? []).length).toBe(1);
         expect(content).toContain("IdentityFile " + join(testHome, ".ssh", "GH"));
+        expect(content).toContain("IdentitiesOnly yes");
+    });
+
+    test("repairServiceKeySshConfigContent adds IdentitiesOnly to existing service key blocks", async () => {
+        const { repairServiceKeySshConfigContent } = await loadSshConfigModule();
+        const content = repairServiceKeySshConfigContent(
+            `Host GH github.com
+    HostName github.com
+    User git
+    IdentityFile ${join(testHome, ".ssh", "GH")}
+    AddKeysToAgent yes
+`,
+            ["GH"],
+        );
+
+        expect(content).toContain("Host GH github.com");
+        expect(content).toContain("IdentitiesOnly yes");
+        expect((content.match(/^Host GH github\.com$/gm) ?? []).length).toBe(1);
     });
 
     test("removeServiceKeySshConfigBlocks removes full multi-alias host block", async () => {
@@ -197,5 +215,31 @@ Host GH github.com
         const content = readFileSync(sshConfigPath, "utf-8");
         expect(content).not.toMatch(/^github\.com$/m);
         expect((content.match(/^Host GH github\.com$/gm) ?? []).length).toBe(1);
+        expect(content).toContain("IdentitiesOnly yes");
+    });
+
+    test("repairServiceKeySshConfig creates backup before adding missing IdentitiesOnly", async () => {
+        const { repairServiceKeySshConfig } = await loadSshConfigModule();
+        const sshConfigPath = join(testHome, ".ssh", "config");
+        const keyPath = join(testHome, ".ssh", "GH");
+        writeFileSync(
+            sshConfigPath,
+            `Host GH github.com
+    HostName github.com
+    User git
+    IdentityFile ${keyPath}
+    AddKeysToAgent yes
+`,
+            "utf-8",
+        );
+
+        const result = await repairServiceKeySshConfig(["GH"]);
+
+        expect(result.repaired).toBe(true);
+        expect(typeof result.backupPath).toBe("string");
+        expect(existsSync(result.backupPath!)).toBe(true);
+
+        const content = readFileSync(sshConfigPath, "utf-8");
+        expect(content).toContain("IdentitiesOnly yes");
     });
 });

@@ -6,7 +6,11 @@ const mockSelect = mock(async () => selectQueue.shift());
 const mockLoadServiceKeys = mock(async () => ["github-test"]);
 const mockGetAllFiles = mock(() => ["github-test", "github-test.pub"]);
 const mockEnsureIdentityInAgent = mock(async () => "already_loaded");
+const mockEnsureManagedAgent = mock(async () => ({ startedAgent: false, status: { running: true, socketPath: "/tmp/agent.sock", identities: "" } }));
+const mockInstallManagedAgentAutostart = mock(async () => ({ shellHook: true, service: true }));
+const mockIsManagedAgentShellHookInstalled = mock(async () => true);
 const mockExecSync = mock(() => "");
+const mockSpawnSync = mock(() => ({ status: 0, stdout: "", stderr: "" }));
 const mockLogger = {
     info: () => {},
     fail: () => {},
@@ -36,6 +40,7 @@ describe("service keys command", () => {
         const serviceKeysPath = new URL("../src/utils/serviceKeys.ts", import.meta.url).pathname;
         const filesPath = new URL("../src/utils/getAllFiles.ts", import.meta.url).pathname;
         const sshAgentPath = new URL("../src/utils/sshAgent.ts", import.meta.url).pathname;
+        const agentManagerPath = new URL("../src/utils/agentManager.ts", import.meta.url).pathname;
         const loggerPath = new URL("../src/utils/logger.ts", import.meta.url).pathname;
 
         selectQueue.length = 0;
@@ -47,8 +52,13 @@ describe("service keys command", () => {
         }));
         mock.module(filesPath, () => ({ getAllFiles: mockGetAllFiles }));
         mock.module(sshAgentPath, () => ({ ensureIdentityInAgent: mockEnsureIdentityInAgent }));
+        mock.module(agentManagerPath, () => ({
+            ensureManagedAgent: mockEnsureManagedAgent,
+            installManagedAgentAutostart: mockInstallManagedAgentAutostart,
+            isManagedAgentShellHookInstalled: mockIsManagedAgentShellHookInstalled,
+        }));
         mock.module(loggerPath, () => ({ logger: mockLogger }));
-        mock.module("child_process", () => ({ spawn: mockSpawn, execSync: mockExecSync }));
+        mock.module("child_process", () => ({ spawn: mockSpawn, spawnSync: mockSpawnSync, execSync: mockExecSync }));
 
         const { manageServiceKeys } = await import(`../src/commands/serviceKeys.ts?test=${Date.now()}`);
         selectQueue.push("list", "github-test", "test");
