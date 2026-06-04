@@ -47,6 +47,8 @@ bun install
 bun run build
 ```
 
+CI validates pushes and pull requests for `develop` and `main` on Linux, with a macOS CLI smoke check.
+
 ## Quick Start
 
 Start the interactive CLI:
