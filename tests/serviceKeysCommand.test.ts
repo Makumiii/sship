@@ -10,6 +10,7 @@ const mockEnsureManagedAgent = mock(async () => ({ startedAgent: false, status: 
 const mockInstallManagedAgentAutostart = mock(async () => ({ shellHook: true, service: true }));
 const mockIsManagedAgentShellHookInstalled = mock(async () => true);
 const mockExecSync = mock(() => "");
+const mockExecFileSync = mock(() => "");
 const mockSpawnSync = mock(() => ({ status: 0, stdout: "", stderr: "" }));
 const mockLogger = {
     info: () => {},
@@ -58,7 +59,12 @@ describe("service keys command", () => {
             isManagedAgentShellHookInstalled: mockIsManagedAgentShellHookInstalled,
         }));
         mock.module(loggerPath, () => ({ logger: mockLogger }));
-        mock.module("child_process", () => ({ spawn: mockSpawn, spawnSync: mockSpawnSync, execSync: mockExecSync }));
+        mock.module("child_process", () => ({
+            spawn: mockSpawn,
+            spawnSync: mockSpawnSync,
+            execSync: mockExecSync,
+            execFileSync: mockExecFileSync,
+        }));
 
         const { manageServiceKeys } = await import(`../src/commands/serviceKeys.ts?test=${Date.now()}`);
         selectQueue.push("list", "github-test", "test");

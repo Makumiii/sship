@@ -35,7 +35,7 @@ npm install -g sship
 ### Linux/macOS Install Script
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Makumiii/sship/main/scripts/bash/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/Makumiii/sship/main/scripts/install.sh | sh
 ```
 
 ### Development
